@@ -1,0 +1,3554 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SOVC Live Dashboard</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+:root {
+    --bg: #0d0f14;
+    --panel: #12151c;
+    --panel2: #181c24;
+    --line: #292d37;
+
+    --text: #e7e9ee;
+    --muted: #8a8f9c;
+
+    --green: #39d98a;
+    --yellow: #e8b339;
+    --red: #e85d4f;
+    --blue: #3e7bfa;
+
+    --mono: "IBM Plex Mono", monospace;
+    --sans: "Inter", sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+}
+
+.container {
+    width: min(1500px, calc(100% - 40px));
+    margin: auto;
+    padding: 28px 0 60px;
+}
+
+/* HEADER */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 22px;
+}
+
+.eyebrow {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: .05em;
+    margin-bottom: 7px;
+}
+
+.live-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    margin-right: 7px;
+}
+
+h1 {
+    font-size: 25px;
+    font-weight: 800;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.updated {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+}
+
+button,
+select,
+input {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    border-radius: 7px;
+    padding: 9px 11px;
+    font-family: var(--sans);
+    font-size: 13px;
+    outline: none;
+}
+
+button {
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: var(--blue);
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+/* FILTERS */
+
+.filters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) 2fr auto;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.field label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.field input,
+.field select {
+    width: 100%;
+}
+
+.custom-range {
+    display: none;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* STATUS */
+
+.status {
+    display: none;
+    padding: 13px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    border: 1px solid var(--red);
+    background: rgba(232,93,79,.08);
+    color: #ffb5ad;
+}
+
+.status.show {
+    display: block;
+}
+
+.loading {
+    display: none;
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font: 11px var(--mono);
+}
+
+.loading.show {
+    display: block;
+}
+
+/* KPI */
+
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+    margin-bottom: 22px;
+}
+
+.kpi {
+    padding: 15px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    min-width: 0;
+}
+
+.kpi-label {
+    color: var(--muted);
+    font: 10px var(--mono);
+}
+
+.kpi-value {
+    font: 600 26px var(--mono);
+    margin-top: 7px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.green {
+    color: var(--green);
+}
+
+.yellow {
+    color: var(--yellow);
+}
+
+.red {
+    color: var(--red);
+}
+
+.muted {
+    color: var(--muted);
+}
+
+/* PANELS */
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.panel h2 {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+    margin-bottom: 16px;
+}
+
+/* ALERTS */
+
+.alerts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.alert {
+    background: rgba(232,93,79,.06);
+    border: 1px solid rgba(232,93,79,.35);
+    border-radius: 8px;
+    padding: 13px;
+}
+
+.alert strong {
+    display: block;
+    font-size: 13px;
+}
+
+.alert small {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font: 10px var(--mono);
+}
+
+/* DEPARTMENT */
+
+.departments {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.department {
+    background: #10131a;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.department h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin-top: 12px;
+}
+
+.mini {
+    background: var(--panel2);
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.mini span {
+    display: block;
+    color: var(--muted);
+    font: 9px var(--mono);
+}
+
+.mini b {
+    display: block;
+    margin-top: 3px;
+    font: 600 14px var(--mono);
+}
+
+/* TABLE */
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    min-width: 1000px;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+th {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font: 10px var(--mono);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #1b1e26;
+    white-space: nowrap;
+}
+
+th.num,
+td.num {
+    text-align: right;
+}
+
+tr:hover td {
+    background: #171a22;
+}
+
+.row-red td {
+    background: rgba(232,93,79,.045);
+}
+
+.row-yellow td {
+    background: rgba(232,179,57,.04);
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 7px;
+}
+
+.badge {
+    display: inline-block;
+    border-radius: 20px;
+    padding: 3px 7px;
+    font: 9px var(--mono);
+    border: 1px solid var(--line);
+}
+
+.badge.green {
+    border-color: rgba(57,217,138,.35);
+}
+
+.badge.yellow {
+    border-color: rgba(232,179,57,.35);
+}
+
+.badge.red {
+    border-color: rgba(232,93,79,.35);
+}
+
+/* CHARTS */
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.chart-box {
+    position: relative;
+    height: 270px;
+}
+
+/* PRODUCTS */
+
+.product-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+}
+
+.product-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 55px;
+    gap: 10px;
+    align-items: center;
+    font-size: 11px;
+}
+
+.track {
+    height: 7px;
+    background: #1c2029;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.fill {
+    height: 100%;
+    background: var(--blue);
+    border-radius: 5px;
+}
+
+.product-number {
+    color: var(--muted);
+    text-align: right;
+    font: 10px var(--mono);
+}
+
+.note {
+    border: 1px dashed var(--line);
+    border-radius: 7px;
+    padding: 10px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.empty {
+    color: var(--muted);
+    padding: 20px;
+    text-align: center;
+    font: 11px var(--mono);
+}
+
+footer {
+    text-align: center;
+    color: var(--muted);
+    font: 10px var(--mono);
+    margin-top: 20px;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:1200px) {
+
+    .kpis {
+        grid-template-columns: repeat(4,1fr);
+    }
+
+    .filters {
+        grid-template-columns: repeat(3,1fr);
+    }
+
+    .grid,
+    .product-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media(max-width:800px) {
+
+    .container {
+        width: calc(100% - 24px);
+    }
+
+    .filters {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .filters .search {
+        grid-column: span 2;
+    }
+
+    .kpis {
+        grid-template-columns: repeat(2,1fr);
+    }
+
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .alerts {
+        grid-template-columns: 1fr;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header class="header">
+
+    <div>
+        <div class="eyebrow">
+            <span class="live-dot"></span>
+            SOVC SALES OPERATIONS · LIVE
+        </div>
+
+        <h1>SOVC Sales & Video Call Dashboard</h1>
+    </div>
+
+    <div class="header-actions">
+        <span class="updated" id="updatedAt">Not loaded</span>
+        <button id="refreshBtn">↻ Refresh Data</button>
+    </div>
+
+</header>
+
+
+<!-- FILTER BAR -->
+
+<section class="filters">
+
+    <div class="field">
+        <label>DATE</label>
+
+        <select id="dateFilter">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="7">Last 7 Days</option>
+            <option value="30">Last 30 Days</option>
+            <option value="month">This Month</option>
+            <option value="custom">Custom Range</option>
+        </select>
+    </div>
+
+
+    <div class="field">
+        <label>DEPARTMENT</label>
+
+        <select id="departmentFilter">
+            <option value="all">All Departments</option>
+        </select>
+    </div>
+
+
+    <div class="field">
+        <label>AGENT</label>
+
+        <select id="agentFilter">
+            <option value="all">All Agents</option>
+        </select>
+    </div>
+
+
+    <div class="field">
+        <label>PRODUCT</label>
+
+        <select id="productFilter">
+            <option value="all">All Products</option>
+        </select>
+    </div>
+
+
+    <div class="field search">
+        <label>SEARCH · AGENT / CUSTOMER / PRODUCT / DEPARTMENT</label>
+
+        <input
+            id="searchInput"
+            type="search"
+            placeholder="Search..."
+        >
+    </div>
+
+
+    <div class="field">
+        <label>&nbsp;</label>
+
+        <button id="resetBtn">
+            Reset
+        </button>
+    </div>
+
+</section>
+
+
+<!-- CUSTOM DATE -->
+
+<div
+    class="custom-range"
+    id="customRange"
+>
+
+    <div class="field">
+        <label>FROM</label>
+        <input type="date" id="fromDate">
+    </div>
+
+    <div class="field">
+        <label>TO</label>
+        <input type="date" id="toDate">
+    </div>
+
+</div>
+
+
+<div class="status" id="status"></div>
+
+<div class="loading" id="loading">
+    Loading live Google Sheet data...
+</div>
+
+
+<!-- KPI -->
+
+<section class="kpis" id="kpiRow"></section>
+
+
+<!-- ALERTS -->
+
+<section class="panel">
+
+    <h2>⚠️ Agents Requiring Attention</h2>
+
+    <div class="subtitle">
+        Agents with missed video-call demos, sorted by highest missed count.
+    </div>
+
+    <div class="alerts" id="alerts"></div>
+
+</section>
+
+
+<!-- DEPARTMENTS -->
+
+<section class="panel">
+
+    <h2>Department Performance</h2>
+
+    <div class="subtitle">
+        Department and agent grouping is calculated from the Google Sheet.
+    </div>
+
+    <div class="departments" id="departmentGrid"></div>
+
+</section>
+
+
+<!-- AGENTS -->
+
+<section class="panel">
+
+    <h2>Agent Performance</h2>
+
+    <div class="subtitle">
+        Click any column heading to sort the table.
+    </div>
+
+    <div class="table-wrap">
+
+        <table>
+
+            <thead>
+
+            <tr>
+
+                <th data-sort="agent">Agent ↕</th>
+                <th data-sort="department">Department</th>
+
+                <th class="num" data-sort="total">
+                    Demos ↕
+                </th>
+
+                <th class="num" data-sort="completed">
+                    Completed ↕
+                </th>
+
+                <th class="num" data-sort="missed">
+                    Missed ↕
+                </th>
+
+                <th class="num" data-sort="pending">
+                    Pending ↕
+                </th>
+
+                <th class="num" data-sort="attendance">
+                    Attendance ↕
+                </th>
+
+                <th class="num" data-sort="sales">
+                    Sales ↕
+                </th>
+
+                <th class="num" data-sort="conversion">
+                    Conversion ↕
+                </th>
+
+                <th class="num" data-sort="amount">
+                    Sales Amount ↕
+                </th>
+
+            </tr>
+
+            </thead>
+
+            <tbody id="agentBody"></tbody>
+
+        </table>
+
+    </div>
+
+    <div
+        class="empty"
+        id="agentEmpty"
+        style="display:none"
+    >
+        No agent records match the current filters.
+    </div>
+
+</section>
+
+
+<!-- CHARTS -->
+
+<section class="panel">
+
+    <h2>Sales & Demo Analytics</h2>
+
+    <div class="subtitle">
+        Charts automatically update with the active filters.
+    </div>
+
+    <div class="chart-grid">
+
+        <div>
+            <h3 style="font-size:12px;margin-bottom:10px">
+                Demos by Department
+            </h3>
+
+            <div class="chart-box">
+                <canvas id="departmentChart"></canvas>
+            </div>
+        </div>
+
+
+        <div>
+            <h3 style="font-size:12px;margin-bottom:10px">
+                Agent Attendance
+            </h3>
+
+            <div class="chart-box">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+        </div>
+
+
+        <div>
+            <h3 style="font-size:12px;margin-bottom:10px">
+                Demos vs Sales
+            </h3>
+
+            <div class="chart-box">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+
+
+        <div>
+            <h3 style="font-size:12px;margin-bottom:10px">
+                Daily Demo Trend
+            </h3>
+
+            <div class="chart-box">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- PRODUCTS -->
+
+<section class="panel">
+
+    <h2>Most Demonstrated Products</h2>
+
+    <div class="subtitle">
+        Products are ranked using the Product column from the live sheet.
+    </div>
+
+
+    <div class="product-layout">
+
+        <div>
+
+            <div
+                class="product-list"
+                id="productList"
+            ></div>
+
+            <div
+                class="note"
+                id="productNote"
+            ></div>
+
+        </div>
+
+
+        <div>
+
+            <div class="table-wrap">
+
+                <table style="min-width:650px">
+
+                    <thead>
+
+                    <tr>
+
+                        <th>Product</th>
+                        <th class="num">Demos</th>
+                        <th class="num">Completed</th>
+                        <th class="num">Missed</th>
+                        <th class="num">Sales</th>
+                        <th class="num">Conversion</th>
+
+                    </tr>
+
+                    </thead>
+
+                    <tbody id="productBody"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<footer>
+    Live source: Google Sheets CSV · Automatic refresh every 5 minutes
+</footer>
+
+</div>
+
+
+<script>
+
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+
+const CONFIG = {
+
+    CSV_URL:
+        "https://docs.google.com/spreadsheets/d/1stpXcIC8f_sz34YTqW5mcnQIm6l3Oucbe8eBTBiAH6Y/export?format=csv&gid=1959966043",
+
+    REFRESH_INTERVAL:
+        5 * 60 * 1000
+};
+
+
+/* ============================================================
+   COLUMN MAPPING
+   The dashboard does not require exact column names.
+   ============================================================ */
+
+const FIELD_ALIASES = {
+
+    date: [
+        "date",
+        "demo date",
+        "call date"
+    ],
+
+    time: [
+        "time",
+        "demo time",
+        "call time"
+    ],
+
+    department: [
+        "department",
+        "dept",
+        "team"
+    ],
+
+    agent: [
+        "agent name",
+        "agent",
+        "agentname",
+        "sales agent"
+    ],
+
+    customer: [
+        "customer",
+        "customer no",
+        "customer no.",
+        "customer number",
+        "customer phone",
+        "phone",
+        "mobile"
+    ],
+
+    product: [
+        "product",
+        "product name",
+        "product title"
+    ],
+
+    category: [
+        "product category",
+        "category",
+        "product type"
+    ],
+
+    demoStatus: [
+        "demo status",
+        "demo_status",
+        "call status",
+        "video call status",
+        "status"
+    ],
+
+    demoOutcome: [
+        "demo outcome",
+        "outcome",
+        "call outcome"
+    ],
+
+    saleStatus: [
+        "sale status",
+        "sales status",
+        "order status",
+        "order"
+    ],
+
+    saleAmount: [
+        "sale amount",
+        "sales amount",
+        "amount",
+        "order amount",
+        "revenue",
+        "aov",
+        "order value"
+    ],
+
+    remarks: [
+        "remarks",
+        "remark",
+        "notes",
+        "comments",
+        "comment"
+    ]
+};
+
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+let allRows = [];
+
+let filteredRows = [];
+
+let charts = {};
+
+let sortKey = "sales";
+
+let sortDirection = -1;
+
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+
+const $ = id =>
+    document.getElementById(id);
+
+
+function clean(value) {
+
+    return String(value ?? "").trim();
+
+}
+
+
+function normalize(value) {
+
+    return clean(value)
+        .toLowerCase()
+        .replace(/[._-]+/g, " ")
+        .replace(/\s+/g, " ");
+
+}
+
+
+function escapeHTML(value) {
+
+    return clean(value)
+        .replace(/[&<>"']/g, char => {
+
+            return {
+
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#039;"
+
+            }[char];
+
+        });
+
+}
+
+
+function percentage(value) {
+
+    return (value * 100).toFixed(1) + "%";
+
+}
+
+
+function money(value) {
+
+    if (!value) {
+        return "₹0";
+    }
+
+    return new Intl.NumberFormat(
+        "en-IN",
+        {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0
+        }
+    ).format(value);
+
+}
+
+
+/* ============================================================
+   DATE
+   ============================================================ */
+
+function parseDate(value) {
+
+    const string = clean(value);
+
+    if (!string) {
+        return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(string)) {
+
+        const date =
+            new Date(
+                string.substring(0, 10) +
+                "T00:00:00"
+            );
+
+        return isNaN(date) ? null : date;
+    }
+
+
+    const parts =
+        string.match(
+            /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/
+        );
+
+
+    if (parts) {
+
+        const date =
+            new Date(
+                Number(parts[3]),
+                Number(parts[1]) - 1,
+                Number(parts[2])
+            );
+
+        return isNaN(date) ? null : date;
+    }
+
+
+    const date = new Date(string);
+
+    return isNaN(date) ? null : date;
+}
+
+
+function dateKey(date) {
+
+    if (!date) {
+        return "";
+    }
+
+    return date
+        .toISOString()
+        .substring(0, 10);
+}
+
+
+/* ============================================================
+   MONEY
+   ============================================================ */
+
+function parseMoney(value) {
+
+    const cleaned =
+        clean(value)
+            .replace(/[₹,$€£\s]/g, "")
+            .replace(/,/g, "");
+
+    const number = Number(cleaned);
+
+    return Number.isFinite(number)
+        ? number
+        : 0;
+}
+
+
+/* ============================================================
+   STATUS NORMALIZATION
+   ============================================================ */
+
+function normalizeDemoStatus(value) {
+
+    const valueNormalized = normalize(value);
+
+    if (
+        [
+            "completed",
+            "complete",
+            "done",
+            "attended",
+            "attended demo",
+            "successful"
+        ].includes(valueNormalized)
+    ) {
+        return "completed";
+    }
+
+
+    if (
+        [
+            "pending",
+            "scheduled",
+            "upcoming",
+            "booked",
+            "in progress"
+        ].includes(valueNormalized)
+    ) {
+        return "pending";
+    }
+
+
+    if (
+        [
+            "missed",
+            "no show",
+            "no-show",
+            "not attended",
+            "not attended demo",
+            "absent",
+            "cancelled",
+            "canceled"
+        ].includes(valueNormalized)
+    ) {
+        return "missed";
+    }
+
+
+    return valueNormalized;
+}
+
+
+function normalizeSaleStatus(value) {
+
+    const valueNormalized =
+        normalize(value);
+
+
+    if (
+        [
+            "sold",
+            "sale",
+            "success",
+            "successful",
+            "ordered",
+            "order placed",
+            "completed"
+        ].includes(valueNormalized)
+    ) {
+        return "sale";
+    }
+
+
+    if (
+        [
+            "pending",
+            "open",
+            "follow up",
+            "followup"
+        ].includes(valueNormalized)
+    ) {
+        return "pending";
+    }
+
+
+    if (
+        [
+            "not sold",
+            "not sale",
+            "lost",
+            "cancelled",
+            "canceled",
+            "failed"
+        ].includes(valueNormalized)
+    ) {
+        return "lost";
+    }
+
+
+    return valueNormalized;
+}
+
+
+/* ============================================================
+   HEADER MAPPING
+   ============================================================ */
+
+function buildHeaderMap(headers) {
+
+    const map = {};
+
+    headers.forEach(header => {
+
+        const normalizedHeader =
+            normalize(header);
+
+
+        Object.entries(FIELD_ALIASES)
+            .forEach(([field, aliases]) => {
+
+                if (map[field]) {
+                    return;
+                }
+
+                if (
+                    aliases
+                        .map(normalize)
+                        .includes(normalizedHeader)
+                ) {
+                    map[field] = header;
+                }
+
+            });
+
+    });
+
+
+    return map;
+}
+
+
+/* ============================================================
+   DATA NORMALIZATION
+   ============================================================ */
+
+function normalizeRows(rawRows) {
+
+    if (!rawRows.length) {
+        return [];
+    }
+
+
+    const headerMap =
+        buildHeaderMap(
+            Object.keys(rawRows[0])
+        );
+
+
+    const normalized =
+        rawRows.map(row => {
+
+            const get = field => {
+
+                if (!headerMap[field]) {
+                    return "";
+                }
+
+                return clean(
+                    row[headerMap[field]]
+                );
+
+            };
+
+
+            const date =
+                parseDate(
+                    get("date")
+                );
+
+
+            return {
+
+                date,
+
+                dateKey:
+                    dateKey(date),
+
+                time:
+                    get("time"),
+
+                department:
+                    get("department") ||
+                    "Unassigned",
+
+                agent:
+                    get("agent") ||
+                    "Unassigned",
+
+                customer:
+                    get("customer"),
+
+                product:
+                    get("product"),
+
+                category:
+                    get("category"),
+
+                demoStatus:
+                    normalizeDemoStatus(
+                        get("demoStatus")
+                    ),
+
+                demoOutcome:
+                    normalizeDemoStatus(
+                        get("demoOutcome")
+                    ),
+
+                saleStatus:
+                    normalizeSaleStatus(
+                        get("saleStatus")
+                    ),
+
+                saleAmount:
+                    parseMoney(
+                        get("saleAmount")
+                    ),
+
+                remarks:
+                    get("remarks")
+
+            };
+
+        });
+
+
+    return removeExactDuplicates(
+        normalized
+    );
+}
+
+
+/* ============================================================
+   DUPLICATE PROTECTION
+   ============================================================ */
+
+function removeExactDuplicates(rows) {
+
+    const seen = new Set();
+
+    return rows.filter(row => {
+
+        const key =
+            JSON.stringify(row);
+
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+
+        return true;
+    });
+}
+
+
+/* ============================================================
+   LOAD GOOGLE SHEET
+   ============================================================ */
+
+async function loadData() {
+
+    setLoading(true);
+
+    clearStatus();
+
+    $("updatedAt").textContent =
+        "Loading...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                CONFIG.CSV_URL,
+                {
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const csvText =
+            await response.text();
+
+
+        const parsed =
+            Papa.parse(
+                csvText,
+                {
+                    header: true,
+                    skipEmptyLines: true
+                }
+            );
+
+
+        if (
+            !parsed.data ||
+            !parsed.data.length
+        ) {
+
+            throw new Error(
+                "No rows were found in the Google Sheet."
+            );
+
+        }
+
+
+        allRows =
+            normalizeRows(
+                parsed.data
+            );
+
+
+        if (!allRows.length) {
+
+            throw new Error(
+                "No usable records were found."
+            );
+
+        }
+
+
+        populateFilters();
+
+        applyFilters();
+
+
+        $("updatedAt").textContent =
+            "Updated " +
+            new Date()
+                .toLocaleString();
+
+    }
+
+    catch (error) {
+
+        allRows = [];
+
+        filteredRows = [];
+
+        renderDashboard();
+
+
+        showStatus(
+            "Unable to load the live Google Sheet. " +
+            error.message +
+            " Make sure the required sheet tab is published to the web as CSV and accessible without signing in. No fake data has been used."
+        );
+
+
+        $("updatedAt").textContent =
+            "Load failed";
+
+    }
+
+    finally {
+
+        setLoading(false);
+
+    }
+
+}
+
+
+/* ============================================================
+   FILTER OPTIONS
+   ============================================================ */
+
+function populateFilters() {
+
+    populateSelect(
+        "departmentFilter",
+        unique(
+            allRows.map(
+                row => row.department
+            )
+        ),
+        "All Departments"
+    );
+
+
+    populateSelect(
+        "agentFilter",
+        unique(
+            allRows.map(
+                row => row.agent
+            )
+        ),
+        "All Agents"
+    );
+
+
+    populateSelect(
+        "productFilter",
+        unique(
+            allRows
+                .map(row => row.product)
+                .filter(Boolean)
+        ),
+        "All Products"
+    );
+
+}
+
+
+function unique(values) {
+
+    return [
+        ...new Set(
+            values.filter(Boolean)
+        )
+    ].sort(
+        (a,b) =>
+            a.localeCompare(
+                b
+            )
+    );
+
+}
+
+
+function populateSelect(
+    id,
+    values,
+    firstLabel
+) {
+
+    const select = $(id);
+
+    const oldValue =
+        select.value;
+
+
+    select.innerHTML =
+        '<option value="all">' +
+        firstLabel +
+        "</option>" +
+
+        values
+            .map(
+                value =>
+                    '<option value="' +
+                    escapeHTML(value) +
+                    '">' +
+                    escapeHTML(value) +
+                    "</option>"
+            )
+            .join("");
+
+
+    if (
+        values.includes(oldValue)
+    ) {
+
+        select.value =
+            oldValue;
+
+    }
+
+}
+
+
+/* ============================================================
+   DATE FILTER
+   ============================================================ */
+
+function dateMatches(row) {
+
+    const mode =
+        $("dateFilter").value;
+
+
+    if (mode === "all") {
+        return true;
+    }
+
+
+    if (!row.date) {
+        return false;
+    }
+
+
+    const rowDate =
+        new Date(row.date);
+
+    rowDate.setHours(
+        0,0,0,0
+    );
+
+
+    const today =
+        new Date();
+
+    today.setHours(
+        0,0,0,0
+    );
+
+
+    if (mode === "today") {
+
+        return (
+            rowDate.getTime() ===
+            today.getTime()
+        );
+
+    }
+
+
+    if (mode === "yesterday") {
+
+        const yesterday =
+            new Date(today);
+
+        yesterday.setDate(
+            yesterday.getDate() - 1
+        );
+
+        return (
+            rowDate.getTime() ===
+            yesterday.getTime()
+        );
+
+    }
+
+
+    if (
+        mode === "7" ||
+        mode === "30"
+    ) {
+
+        const days =
+            Number(mode);
+
+        const start =
+            new Date(today);
+
+        start.setDate(
+            start.getDate() -
+            (days - 1)
+        );
+
+        return (
+            rowDate >= start &&
+            rowDate <= today
+        );
+
+    }
+
+
+    if (mode === "month") {
+
+        return (
+            rowDate.getFullYear() ===
+            today.getFullYear() &&
+
+            rowDate.getMonth() ===
+            today.getMonth()
+        );
+
+    }
+
+
+    if (mode === "custom") {
+
+        const from =
+            $("fromDate").value
+                ? new Date(
+                    $("fromDate").value +
+                    "T00:00:00"
+                )
+                : null;
+
+
+        const to =
+            $("toDate").value
+                ? new Date(
+                    $("toDate").value +
+                    "T23:59:59"
+                )
+                : null;
+
+
+        return (
+            (!from || rowDate >= from) &&
+            (!to || rowDate <= to)
+        );
+
+    }
+
+
+    return true;
+}
+
+
+/* ============================================================
+   APPLY FILTERS
+   ============================================================ */
+
+function applyFilters() {
+
+    const department =
+        normalize(
+            $("departmentFilter").value
+        );
+
+
+    const agent =
+        normalize(
+            $("agentFilter").value
+        );
+
+
+    const product =
+        normalize(
+            $("productFilter").value
+        );
+
+
+    const search =
+        normalize(
+            $("searchInput").value
+        );
+
+
+    filteredRows =
+        allRows.filter(row => {
+
+            if (
+                !dateMatches(row)
+            ) {
+                return false;
+            }
+
+
+            if (
+                department !== "all" &&
+                normalize(row.department) !==
+                department
+            ) {
+                return false;
+            }
+
+
+            if (
+                agent !== "all" &&
+                normalize(row.agent) !==
+                agent
+            ) {
+                return false;
+            }
+
+
+            if (
+                product !== "all" &&
+                normalize(row.product) !==
+                product
+            ) {
+                return false;
+            }
+
+
+            if (search) {
+
+                const searchable =
+                    normalize(
+                        [
+                            row.agent,
+                            row.customer,
+                            row.product,
+                            row.department
+                        ].join(" ")
+                    );
+
+
+                if (
+                    !searchable.includes(
+                        search
+                    )
+                ) {
+                    return false;
+                }
+
+            }
+
+
+            return true;
+
+        });
+
+
+    renderDashboard();
+
+}
+
+
+/* ============================================================
+   CORE METRICS
+   ============================================================ */
+
+function calculateMetrics(rows) {
+
+    const total =
+        rows.length;
+
+
+    const completed =
+        rows.filter(
+            row =>
+                row.demoStatus ===
+                "completed"
+        ).length;
+
+
+    const missed =
+        rows.filter(
+            row =>
+                row.demoStatus ===
+                "missed"
+        ).length;
+
+
+    const pending =
+        rows.filter(
+            row =>
+                row.demoStatus ===
+                "pending"
+        ).length;
+
+
+    const salesRows =
+        rows.filter(
+            row =>
+                row.saleStatus ===
+                "sale"
+        );
+
+
+    const sales =
+        salesRows.length;
+
+
+    const salesAmount =
+        salesRows.reduce(
+            (sum,row) =>
+                sum +
+                row.saleAmount,
+            0
+        );
+
+
+    return {
+
+        total,
+
+        completed,
+
+        missed,
+
+        pending,
+
+        attendance:
+            total
+                ? completed / total
+                : 0,
+
+        sales,
+
+        salesAmount,
+
+        conversion:
+            completed
+                ? sales / completed
+                : 0
+
+    };
+
+}
+
+
+/* ============================================================
+   RENDER EVERYTHING
+   ============================================================ */
+
+function renderDashboard() {
+
+    renderKPIs();
+
+    renderAlerts();
+
+    renderDepartments();
+
+    renderAgents();
+
+    renderProducts();
+
+    renderCharts();
+
+}
+
+
+/* ============================================================
+   KPI
+   ============================================================ */
+
+function renderKPIs() {
+
+    const metrics =
+        calculateMetrics(
+            filteredRows
+        );
+
+
+    const cards = [
+
+        [
+            "TOTAL DEMOS",
+            metrics.total,
+            ""
+        ],
+
+        [
+            "COMPLETED",
+            metrics.completed,
+            "green"
+        ],
+
+        [
+            "MISSED",
+            metrics.missed,
+            metrics.missed
+                ? "red"
+                : ""
+        ],
+
+        [
+            "PENDING",
+            metrics.pending,
+            metrics.pending
+                ? "yellow"
+                : ""
+        ],
+
+        [
+            "ATTENDANCE",
+            percentage(
+                metrics.attendance
+            ),
+            metrics.attendance >= .8
+                ? "green"
+                : metrics.attendance >= .6
+                    ? "yellow"
+                    : "red"
+        ],
+
+        [
+            "SALES",
+            metrics.sales,
+            "green"
+        ],
+
+        [
+            "CONVERSION",
+            percentage(
+                metrics.conversion
+            ),
+            metrics.conversion >= .3
+                ? "green"
+                : metrics.conversion >= .15
+                    ? "yellow"
+                    : "red"
+        ],
+
+        [
+            "SALES AMOUNT",
+            metrics.salesAmount
+                ? money(
+                    metrics.salesAmount
+                )
+                : "N/A",
+            metrics.salesAmount
+                ? "green"
+                : "muted"
+        ]
+
+    ];
+
+
+    $("kpiRow").innerHTML =
+        cards
+            .map(
+                card =>
+
+                    '<div class="kpi">' +
+
+                        '<div class="kpi-label">' +
+                        card[0] +
+                        "</div>" +
+
+                        '<div class="kpi-value ' +
+                        card[2] +
+                        '">' +
+                        card[1] +
+                        "</div>" +
+
+                    "</div>"
+
+            )
+            .join("");
+
+}
+
+
+/* ============================================================
+   AGENTS REQUIRING ATTENTION
+   ============================================================ */
+
+function renderAlerts() {
+
+    const agents = {};
+
+
+    filteredRows.forEach(row => {
+
+        if (!agents[row.agent]) {
+
+            agents[row.agent] = {
+
+                total: 0,
+
+                completed: 0,
+
+                missed: 0
+
+            };
+
+        }
+
+
+        agents[row.agent].total++;
+
+
+        if (
+            row.demoStatus ===
+            "completed"
+        ) {
+
+            agents[row.agent]
+                .completed++;
+
+        }
+
+
+        if (
+            row.demoStatus ===
+            "missed"
+        ) {
+
+            agents[row.agent]
+                .missed++;
+
+        }
+
+    });
+
+
+    const list =
+        Object.entries(
+            agents
+        )
+        .map(
+            ([agent,data]) => ({
+
+                agent,
+
+                ...data,
+
+                attendance:
+                    data.total
+                        ? data.completed /
+                          data.total
+                        : 0
+
+            })
+        )
+        .filter(
+            agent =>
+                agent.missed > 0
+        )
+        .sort(
+            (a,b) =>
+                b.missed -
+                a.missed
+        );
+
+
+    if (!list.length) {
+
+        $("alerts").innerHTML =
+            '<div class="empty">' +
+            "No agents with missed demos." +
+            "</div>";
+
+        return;
+
+    }
+
+
+    $("alerts").innerHTML =
+        list
+            .slice(0,12)
+            .map(
+                agent =>
+
+                    '<div class="alert">' +
+
+                        "<strong>" +
+                        "🔴 " +
+                        escapeHTML(
+                            agent.agent
+                        ) +
+                        "</strong>" +
+
+                        "<small>" +
+
+                        "Missed: " +
+                        agent.missed +
+
+                        " · Attendance: " +
+                        percentage(
+                            agent.attendance
+                        ) +
+
+                        " · Demos: " +
+                        agent.total +
+
+                        "</small>" +
+
+                    "</div>"
+
+            )
+            .join("");
+
+}
+
+
+/* ============================================================
+   AGENT GROUPING
+   ============================================================ */
+
+function getAgentGroups(rows) {
+
+    const groups = {};
+
+
+    rows.forEach(row => {
+
+        const key =
+            row.agent +
+            "|||" +
+            row.department;
+
+
+        if (!groups[key]) {
+
+            groups[key] = {
+
+                agent:
+                    row.agent,
+
+                department:
+                    row.department,
+
+                total: 0,
+
+                completed: 0,
+
+                missed: 0,
+
+                pending: 0,
+
+                sales: 0,
+
+                amount: 0
+
+            };
+
+        }
+
+
+        const group =
+            groups[key];
+
+
+        group.total++;
+
+
+        if (
+            row.demoStatus ===
+            "completed"
+        ) {
+
+            group.completed++;
+
+        }
+
+
+        if (
+            row.demoStatus ===
+            "missed"
+        ) {
+
+            group.missed++;
+
+        }
+
+
+        if (
+            row.demoStatus ===
+            "pending"
+        ) {
+
+            group.pending++;
+
+        }
+
+
+        if (
+            row.saleStatus ===
+            "sale"
+        ) {
+
+            group.sales++;
+
+            group.amount +=
+                row.saleAmount;
+
+        }
+
+    });
+
+
+    return Object.values(
+        groups
+    )
+    .map(group => ({
+
+        ...group,
+
+        attendance:
+            group.total
+                ? group.completed /
+                  group.total
+                : 0,
+
+        conversion:
+            group.completed
+                ? group.sales /
+                  group.completed
+                : 0
+
+    }));
+
+}
+
+
+/* ============================================================
+   DEPARTMENT
+   ============================================================ */
+
+function renderDepartments() {
+
+    const departments = {};
+
+
+    filteredRows.forEach(row => {
+
+        if (
+            !departments[
+                row.department
+            ]
+        ) {
+
+            departments[
+                row.department
+            ] = [];
+
+        }
+
+
+        departments[
+            row.department
+        ].push(row);
+
+    });
+
+
+    const html =
+        Object.entries(
+            departments
+        )
+        .sort(
+            (a,b) =>
+                a[0].localeCompare(
+                    b[0]
+                )
+        )
+        .map(
+            ([department,rows]) => {
+
+                const metrics =
+                    calculateMetrics(
+                        rows
+                    );
+
+
+                return (
+
+                    '<div class="department">' +
+
+                        "<h3>" +
+                        escapeHTML(
+                            department
+                        ) +
+                        "</h3>" +
+
+                        '<div class="mini-grid">' +
+
+                            mini(
+                                "DEMOS",
+                                metrics.total
+                            ) +
+
+                            mini(
+                                "COMPLETED",
+                                metrics.completed
+                            ) +
+
+                            mini(
+                                "MISSED",
+                                metrics.missed
+                            ) +
+
+                            mini(
+                                "PENDING",
+                                metrics.pending
+                            ) +
+
+                            mini(
+                                "ATTENDANCE",
+                                percentage(
+                                    metrics.attendance
+                                )
+                            ) +
+
+                            mini(
+                                "SALES",
+                                metrics.sales
+                            ) +
+
+                            mini(
+                                "CONVERSION",
+                                percentage(
+                                    metrics.conversion
+                                )
+                            ) +
+
+                        "</div>" +
+
+                    "</div>"
+
+                );
+
+            }
+        )
+        .join("");
+
+
+    $("departmentGrid").innerHTML =
+        html ||
+        '<div class="empty">' +
+        "No department data." +
+        "</div>";
+
+}
+
+
+function mini(label,value) {
+
+    return (
+
+        '<div class="mini">' +
+
+            "<span>" +
+            label +
+            "</span>" +
+
+            "<b>" +
+            value +
+            "</b>" +
+
+        "</div>"
+
+    );
+
+}
+
+
+/* ============================================================
+   AGENT TABLE
+   ============================================================ */
+
+function renderAgents() {
+
+    let agents =
+        getAgentGroups(
+            filteredRows
+        );
+
+
+    agents.sort(
+        (a,b) => {
+
+            const aValue =
+                a[sortKey];
+
+            const bValue =
+                b[sortKey];
+
+
+            if (
+                typeof aValue ===
+                "string"
+            ) {
+
+                return (
+                    sortDirection *
+                    aValue.localeCompare(
+                        bValue
+                    )
+                );
+
+            }
+
+
+            return (
+                sortDirection *
+                (aValue - bValue)
+            );
+
+        }
+    );
+
+
+    $("agentEmpty").style.display =
+        agents.length
+            ? "none"
+            : "block";
+
+
+    $("agentBody").innerHTML =
+        agents
+            .map(
+                agent => {
+
+                    const rowClass =
+                        agent.missed > 0
+                            ? "row-red"
+                            : agent.pending > 0
+                                ? "row-yellow"
+                                : "";
+
+
+                    const statusColor =
+                        agent.missed > 0
+                            ? "red"
+                            : agent.pending > 0
+                                ? "yellow"
+                                : "green";
+
+
+                    const badgeClass =
+                        agent.attendance >= .8
+                            ? "green"
+                            : agent.attendance >= .6
+                                ? "yellow"
+                                : "red";
+
+
+                    return (
+
+                        '<tr class="' +
+                        rowClass +
+                        '">' +
+
+                            "<td>" +
+
+                                '<span class="status-dot" ' +
+                                'style="background:var(--' +
+                                statusColor +
+                                ')"></span>' +
+
+                                escapeHTML(
+                                    agent.agent
+                                ) +
+
+                            "</td>" +
+
+                            "<td>" +
+                            escapeHTML(
+                                agent.department
+                            ) +
+                            "</td>" +
+
+                            '<td class="num">' +
+                            agent.total +
+                            "</td>" +
+
+                            '<td class="num">' +
+                            agent.completed +
+                            "</td>" +
+
+                            '<td class="num red">' +
+                            agent.missed +
+                            "</td>" +
+
+                            '<td class="num yellow">' +
+                            agent.pending +
+                            "</td>" +
+
+                            '<td class="num">' +
+
+                                '<span class="badge ' +
+                                badgeClass +
+                                '">' +
+
+                                percentage(
+                                    agent.attendance
+                                ) +
+
+                                "</span>" +
+
+                            "</td>" +
+
+                            '<td class="num">' +
+                            agent.sales +
+                            "</td>" +
+
+                            '<td class="num">' +
+                            percentage(
+                                agent.conversion
+                            ) +
+                            "</td>" +
+
+                            '<td class="num">' +
+                            (
+                                agent.amount
+                                    ? money(
+                                        agent.amount
+                                    )
+                                    : "—"
+                            ) +
+                            "</td>" +
+
+                        "</tr>"
+
+                    );
+
+                }
+            )
+            .join("");
+
+}
+
+
+/* ============================================================
+   PRODUCT ANALYSIS
+   ============================================================ */
+
+function getProducts() {
+
+    const products = {};
+
+
+    filteredRows.forEach(row => {
+
+        const product =
+            row.product ||
+            "Product Name Not Provided";
+
+
+        if (!products[product]) {
+
+            products[product] = {
+
+                product,
+
+                total: 0,
+
+                completed: 0,
+
+                missed: 0,
+
+                sales: 0
+
+            };
+
+        }
+
+
+        const item =
+            products[product];
+
+
+        item.total++;
+
+
+        if (
+            row.demoStatus ===
+            "completed"
+        ) {
+
+            item.completed++;
+
+        }
+
+
+        if (
+            row.demoStatus ===
+            "missed"
+        ) {
+
+            item.missed++;
+
+        }
+
+
+        if (
+            row.saleStatus ===
+            "sale"
+        ) {
+
+            item.sales++;
+
+        }
+
+    });
+
+
+    return Object.values(
+        products
+    )
+    .map(product => ({
+
+        ...product,
+
+        conversion:
+            product.completed
+                ? product.sales /
+                  product.completed
+                : 0
+
+    }))
+    .sort(
+        (a,b) =>
+            b.total -
+            a.total
+    );
+
+}
+
+
+function renderProducts() {
+
+    const products =
+        getProducts();
+
+
+    const max =
+        Math.max(
+            1,
+            ...products.map(
+                p => p.total
+            )
+        );
+
+
+    const total =
+        filteredRows.length;
+
+
+    $("productList").innerHTML =
+        products.length
+
+            ? products
+                .slice(0,10)
+                .map(
+                    product =>
+
+                        '<div class="product-row">' +
+
+                            "<span>" +
+                            escapeHTML(
+                                product.product
+                            ) +
+                            "</span>" +
+
+                            '<div class="track">' +
+
+                                '<div class="fill" ' +
+                                'style="width:' +
+                                (
+                                    product.total /
+                                    max *
+                                    100
+                                ) +
+                                '%"></div>' +
+
+                            "</div>" +
+
+                            '<span class="product-number">' +
+
+                                product.total +
+
+                                " · " +
+
+                                (
+                                    total
+                                        ? percentage(
+                                            product.total /
+                                            total
+                                        )
+                                        : "0%"
+                                ) +
+
+                            "</span>" +
+
+                        "</div>"
+
+                )
+                .join("")
+
+            : '<div class="empty">' +
+              "No product data." +
+              "</div>";
+
+
+    $("productBody").innerHTML =
+        products
+            .map(
+                product =>
+
+                    "<tr>" +
+
+                        "<td>" +
+                        escapeHTML(
+                            product.product
+                        ) +
+                        "</td>" +
+
+                        '<td class="num">' +
+                        product.total +
+                        "</td>" +
+
+                        '<td class="num">' +
+                        product.completed +
+                        "</td>" +
+
+                        '<td class="num red">' +
+                        product.missed +
+                        "</td>" +
+
+                        '<td class="num">' +
+                        product.sales +
+                        "</td>" +
+
+                        '<td class="num">' +
+                        percentage(
+                            product.conversion
+                        ) +
+                        "</td>" +
+
+                    "</tr>"
+
+            )
+            .join("");
+
+
+    $("productNote").textContent =
+        products.length
+            ? "Top 5: " +
+              products
+                .slice(0,5)
+                .map(
+                    p => p.product
+                )
+                .join(", ") +
+
+              ". Least demonstrated: " +
+
+              products
+                .slice(-3)
+                .map(
+                    p => p.product
+                )
+                .join(", ")
+
+            : "No product records are available.";
+
+}
+
+
+/* ============================================================
+   CHART HELPER
+   ============================================================ */
+
+function renderChart(
+    id,
+    type,
+    data,
+    options = {}
+) {
+
+    if (charts[id]) {
+
+        charts[id].destroy();
+
+    }
+
+
+    charts[id] =
+        new Chart(
+            $(id),
+            {
+
+                type,
+
+                data,
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio:
+                        false,
+
+                    ...options
+
+                }
+
+            }
+        );
+
+}
+
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+
+function renderCharts() {
+
+    const metrics =
+        calculateMetrics(
+            filteredRows
+        );
+
+
+    /* Department chart */
+
+    const departments = {};
+
+
+    filteredRows.forEach(row => {
+
+        departments[
+            row.department
+        ] =
+            (
+                departments[
+                    row.department
+                ] || 0
+            ) + 1;
+
+    });
+
+
+    const departmentLabels =
+        Object.keys(
+            departments
+        );
+
+
+    renderChart(
+
+        "departmentChart",
+
+        "bar",
+
+        {
+
+            labels:
+                departmentLabels,
+
+            datasets: [
+
+                {
+
+                    label: "Demos",
+
+                    data:
+                        departmentLabels
+                            .map(
+                                d =>
+                                    departments[d]
+                            ),
+
+                    backgroundColor:
+                        "#3E7BFA",
+
+                    borderRadius: 5
+
+                }
+
+            ]
+
+        },
+
+        {
+
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+
+            scales: {
+
+                x: {
+                    ticks: {
+                        color:
+                            "#8A8F9C"
+                    },
+
+                    grid: {
+                        display: false
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+
+                    ticks: {
+                        color:
+                            "#8A8F9C",
+                        precision: 0
+                    },
+
+                    grid: {
+                        color:
+                            "#292D37"
+                    }
+                }
+
+            }
+
+        }
+
+    );
+
+
+    /* Attendance */
+
+    const agents =
+        getAgentGroups(
+            filteredRows
+        );
+
+
+    renderChart(
+
+        "attendanceChart",
+
+        "bar",
+
+        {
+
+            labels:
+                agents.map(
+                    agent =>
+                        agent.agent
+                ),
+
+            datasets: [
+
+                {
+
+                    label:
+                        "Attendance %",
+
+                    data:
+                        agents.map(
+                            agent =>
+                                Number(
+                                    (
+                                        agent.attendance *
+                                        100
+                                    ).toFixed(1)
+                                )
+                        ),
+
+                    backgroundColor:
+                        agents.map(
+                            agent =>
+                                agent.attendance >= .8
+                                    ? "#39D98A"
+                                    : agent.attendance >= .6
+                                        ? "#E8B339"
+                                        : "#E85D4F"
+                        ),
+
+                    borderRadius: 5
+
+                }
+
+            ]
+
+        },
+
+        {
+
+            indexAxis: "y",
+
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+
+            scales: {
+
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+
+                    ticks: {
+                        color:
+                            "#8A8F9C"
+                    },
+
+                    grid: {
+                        color:
+                            "#292D37"
+                    }
+                },
+
+                y: {
+                    ticks: {
+                        color:
+                            "#8A8F9C"
+                    },
+
+                    grid: {
+                        display: false
+                    }
+                }
+
+            }
+
+        }
+
+    );
+
+
+    /* Sales */
+
+    renderChart(
+
+        "salesChart",
+
+        "bar",
+
+        {
+
+            labels: [
+                "Completed Demos",
+                "Successful Sales"
+            ],
+
+            datasets: [
+
+                {
+
+                    data: [
+                        metrics.completed,
+                        metrics.sales
+                    ],
+
+                    backgroundColor: [
+                        "#3E7BFA",
+                        "#39D98A"
+                    ],
+
+                    borderRadius: 5
+
+                }
+
+            ]
+
+        },
+
+        {
+
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+
+            scales: {
+
+                x: {
+                    ticks: {
+                        color:
+                            "#8A8F9C"
+                    },
+
+                    grid: {
+                        display: false
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+
+                    ticks: {
+                        color:
+                            "#8A8F9C",
+                        precision: 0
+                    },
+
+                    grid: {
+                        color:
+                            "#292D37"
+                    }
+                }
+
+            }
+
+        }
+
+    );
+
+
+    /* Trend */
+
+    const days = {};
+
+
+    filteredRows.forEach(row => {
+
+        if (!row.dateKey) {
+            return;
+        }
+
+
+        days[row.dateKey] =
+            (
+                days[row.dateKey] ||
+                0
+            ) + 1;
+
+    });
+
+
+    const dates =
+        Object.keys(days)
+            .sort();
+
+
+    renderChart(
+
+        "trendChart",
+
+        "line",
+
+        {
+
+            labels:
+                dates.map(
+                    date =>
+                        date.substring(
+                            5
+                        )
+                ),
+
+            datasets: [
+
+                {
+
+                    label:
+                        "Demos",
+
+                    data:
+                        dates.map(
+                            date =>
+                                days[date]
+                        ),
+
+                    borderColor:
+                        "#3E7BFA",
+
+                    backgroundColor:
+                        "rgba(62,123,250,.12)",
+
+                    fill: true,
+
+                    tension: .25,
+
+                    pointRadius: 3
+
+                }
+
+            ]
+
+        },
+
+        {
+
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+
+            scales: {
+
+                x: {
+                    ticks: {
+                        color:
+                            "#8A8F9C"
+                    },
+
+                    grid: {
+                        display: false
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+
+                    ticks: {
+                        color:
+                            "#8A8F9C",
+                        precision: 0
+                    },
+
+                    grid: {
+                        color:
+                            "#292D37"
+                    }
+                }
+
+            }
+
+        }
+
+    );
+
+}
+
+
+/* ============================================================
+   LOADING / ERROR
+   ============================================================ */
+
+function setLoading(isLoading) {
+
+    $("loading")
+        .classList
+        .toggle(
+            "show",
+            isLoading
+        );
+
+
+    $("refreshBtn")
+        .disabled =
+        isLoading;
+
+}
+
+
+function showStatus(message) {
+
+    $("status").textContent =
+        message;
+
+    $("status")
+        .classList
+        .add("show");
+
+}
+
+
+function clearStatus() {
+
+    $("status")
+        .classList
+        .remove("show");
+
+}
+
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+
+document
+    .querySelectorAll(
+        "th[data-sort]"
+    )
+    .forEach(
+        header => {
+
+            header.addEventListener(
+                "click",
+                () => {
+
+                    const key =
+                        header.dataset.sort;
+
+
+                    if (
+                        sortKey === key
+                    ) {
+
+                        sortDirection *= -1;
+
+                    } else {
+
+                        sortKey = key;
+
+                        sortDirection = -1;
+
+                    }
+
+
+                    renderAgents();
+
+                }
+            );
+
+        }
+    );
+
+
+[
+    "dateFilter",
+    "departmentFilter",
+    "agentFilter",
+    "productFilter"
+]
+.forEach(
+    id => {
+
+        $(id)
+            .addEventListener(
+                "change",
+                () => {
+
+                    $("customRange")
+                        .style
+                        .display =
+                        $("dateFilter")
+                            .value ===
+                        "custom"
+                            ? "flex"
+                            : "none";
+
+
+                    applyFilters();
+
+                }
+            );
+
+    }
+);
+
+
+[
+    "searchInput",
+    "fromDate",
+    "toDate"
+]
+.forEach(
+    id => {
+
+        $(id)
+            .addEventListener(
+                "input",
+                applyFilters
+            );
+
+    }
+);
+
+
+$("refreshBtn")
+    .addEventListener(
+        "click",
+        loadData
+    );
+
+
+$("resetBtn")
+    .addEventListener(
+        "click",
+        () => {
+
+            $("dateFilter").value =
+                "all";
+
+            $("departmentFilter").value =
+                "all";
+
+            $("agentFilter").value =
+                "all";
+
+            $("productFilter").value =
+                "all";
+
+            $("searchInput").value =
+                "";
+
+            $("fromDate").value =
+                "";
+
+            $("toDate").value =
+                "";
+
+            $("customRange")
+                .style
+                .display =
+                "none";
+
+            applyFilters();
+
+        }
+    );
+
+
+/* ============================================================
+   START
+   ============================================================ */
+
+loadData();
+
+
+setInterval(
+    loadData,
+    CONFIG.REFRESH_INTERVAL
+);
+
+</script>
+
+</body>
+</html>
+```
