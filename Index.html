@@ -1,3554 +1,687 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>SOVC Live Dashboard</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
 <style>
-:root {
-    --bg: #0d0f14;
-    --panel: #12151c;
-    --panel2: #181c24;
-    --line: #292d37;
-
-    --text: #e7e9ee;
-    --muted: #8a8f9c;
-
-    --green: #39d98a;
-    --yellow: #e8b339;
-    --red: #e85d4f;
-    --blue: #3e7bfa;
-
-    --mono: "IBM Plex Mono", monospace;
-    --sans: "Inter", sans-serif;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-}
-
-.container {
-    width: min(1500px, calc(100% - 40px));
-    margin: auto;
-    padding: 28px 0 60px;
-}
-
-/* HEADER */
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 20px;
-    flex-wrap: wrap;
-
-    padding-bottom: 22px;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 22px;
-}
-
-.eyebrow {
-    font-family: var(--mono);
-    color: var(--muted);
-    font-size: 11px;
-    letter-spacing: .05em;
-    margin-bottom: 7px;
-}
-
-.live-dot {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    background: var(--green);
-    border-radius: 50%;
-    margin-right: 7px;
-}
-
-h1 {
-    font-size: 25px;
-    font-weight: 800;
-}
-
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.updated {
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 10px;
-}
-
-button,
-select,
-input {
-    border: 1px solid var(--line);
-    background: var(--panel);
-    color: var(--text);
-    border-radius: 7px;
-    padding: 9px 11px;
-    font-family: var(--sans);
-    font-size: 13px;
-    outline: none;
-}
-
-button {
-    cursor: pointer;
-}
-
-button:hover {
-    border-color: var(--blue);
-}
-
-button:disabled {
-    opacity: .5;
-    cursor: not-allowed;
-}
-
-/* FILTERS */
-
-.filters {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr) 2fr auto;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.field {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.field label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-}
-
-.field input,
-.field select {
-    width: 100%;
-}
-
-.custom-range {
-    display: none;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-/* STATUS */
-
-.status {
-    display: none;
-    padding: 13px 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 13px;
-    border: 1px solid var(--red);
-    background: rgba(232,93,79,.08);
-    color: #ffb5ad;
-}
-
-.status.show {
-    display: block;
-}
-
-.loading {
-    display: none;
-    padding: 20px;
-    text-align: center;
-    color: var(--muted);
-    font: 11px var(--mono);
-}
-
-.loading.show {
-    display: block;
-}
-
-/* KPI */
-
-.kpis {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    border-top: 1px solid var(--line);
-    border-left: 1px solid var(--line);
-    margin-bottom: 22px;
-}
-
-.kpi {
-    padding: 15px;
-    border-right: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-    min-width: 0;
-}
-
-.kpi-label {
-    color: var(--muted);
-    font: 10px var(--mono);
-}
-
-.kpi-value {
-    font: 600 26px var(--mono);
-    margin-top: 7px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.green {
-    color: var(--green);
-}
-
-.yellow {
-    color: var(--yellow);
-}
-
-.red {
-    color: var(--red);
-}
-
-.muted {
-    color: var(--muted);
-}
-
-/* PANELS */
-
-.panel {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.panel h2 {
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.subtitle {
-    color: var(--muted);
-    font-size: 11px;
-    margin-top: 4px;
-    margin-bottom: 16px;
-}
-
-/* ALERTS */
-
-.alerts {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-}
-
-.alert {
-    background: rgba(232,93,79,.06);
-    border: 1px solid rgba(232,93,79,.35);
-    border-radius: 8px;
-    padding: 13px;
-}
-
-.alert strong {
-    display: block;
-    font-size: 13px;
-}
-
-.alert small {
-    display: block;
-    margin-top: 5px;
-    color: var(--muted);
-    font: 10px var(--mono);
-}
-
-/* DEPARTMENT */
-
-.departments {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 12px;
-}
-
-.department {
-    background: #10131a;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 15px;
-}
-
-.department h3 {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-}
-
-.mini-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 7px;
-    margin-top: 12px;
-}
-
-.mini {
-    background: var(--panel2);
-    border-radius: 6px;
-    padding: 8px;
-}
-
-.mini span {
-    display: block;
-    color: var(--muted);
-    font: 9px var(--mono);
-}
-
-.mini b {
-    display: block;
-    margin-top: 3px;
-    font: 600 14px var(--mono);
-}
-
-/* TABLE */
-
-.table-wrap {
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    min-width: 1000px;
-    border-collapse: collapse;
-    font-size: 12px;
-}
-
-th {
-    text-align: left;
-    padding: 10px 8px;
-    border-bottom: 1px solid var(--line);
-    color: var(--muted);
-    font: 10px var(--mono);
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-td {
-    padding: 10px 8px;
-    border-bottom: 1px solid #1b1e26;
-    white-space: nowrap;
-}
-
-th.num,
-td.num {
-    text-align: right;
-}
-
-tr:hover td {
-    background: #171a22;
-}
-
-.row-red td {
-    background: rgba(232,93,79,.045);
-}
-
-.row-yellow td {
-    background: rgba(232,179,57,.04);
-}
-
-.status-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 7px;
-}
-
-.badge {
-    display: inline-block;
-    border-radius: 20px;
-    padding: 3px 7px;
-    font: 9px var(--mono);
-    border: 1px solid var(--line);
-}
-
-.badge.green {
-    border-color: rgba(57,217,138,.35);
-}
-
-.badge.yellow {
-    border-color: rgba(232,179,57,.35);
-}
-
-.badge.red {
-    border-color: rgba(232,93,79,.35);
-}
-
-/* CHARTS */
-
-.chart-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-}
-
-.chart-box {
-    position: relative;
-    height: 270px;
-}
-
-/* PRODUCTS */
-
-.product-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.product-list {
-    display: flex;
-    flex-direction: column;
-    gap: 11px;
-}
-
-.product-row {
-    display: grid;
-    grid-template-columns: 150px 1fr 55px;
-    gap: 10px;
-    align-items: center;
-    font-size: 11px;
-}
-
-.track {
-    height: 7px;
-    background: #1c2029;
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-.fill {
-    height: 100%;
-    background: var(--blue);
-    border-radius: 5px;
-}
-
-.product-number {
-    color: var(--muted);
-    text-align: right;
-    font: 10px var(--mono);
-}
-
-.note {
-    border: 1px dashed var(--line);
-    border-radius: 7px;
-    padding: 10px;
-    margin-top: 12px;
-    color: var(--muted);
-    font-size: 11px;
-}
-
-.empty {
-    color: var(--muted);
-    padding: 20px;
-    text-align: center;
-    font: 11px var(--mono);
-}
-
-footer {
-    text-align: center;
-    color: var(--muted);
-    font: 10px var(--mono);
-    margin-top: 20px;
-}
-
-/* RESPONSIVE */
-
-@media(max-width:1200px) {
-
-    .kpis {
-        grid-template-columns: repeat(4,1fr);
-    }
-
-    .filters {
-        grid-template-columns: repeat(3,1fr);
-    }
-
-    .grid,
-    .product-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media(max-width:800px) {
-
-    .container {
-        width: calc(100% - 24px);
-    }
-
-    .filters {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .filters .search {
-        grid-column: span 2;
-    }
-
-    .kpis {
-        grid-template-columns: repeat(2,1fr);
-    }
-
-    .chart-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .alerts {
-        grid-template-columns: 1fr;
-    }
-
-    .header-actions {
-        width: 100%;
-        justify-content: space-between;
-    }
-}
+  :root{
+    --bg:#0D0F14; --panel:#12151C; --panel2:#161922; --line:#23262F;
+    --ink:#E7E9EE; --dim:#8A8F9C; --dimmer:#565B68;
+    --signal:#39D98A; --amber:#E8B339; --coral:#E85D4F; --wire:#3E7BFA;
+    --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.4;}
+  .wrap{max-width:1500px;margin:0 auto;padding:24px 22px 70px;}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;
+    padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:18px;}
+  .brand .eyebrow{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--dim);}
+  .pulse{width:7px;height:7px;border-radius:50%;background:var(--signal);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(57,217,138,.55);}70%{box-shadow:0 0 0 7px rgba(57,217,138,0);}100%{box-shadow:0 0 0 0 rgba(57,217,138,0);}}
+  .brand h1{font-size:21px;font-weight:800;letter-spacing:-.01em;}
+  .hdr-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .updated{font-family:var(--mono);font-size:11px;color:var(--dimmer);}
+  button.btn{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;
+    padding:8px 14px;font-family:var(--sans);font-size:13px;cursor:pointer;}
+  button.btn:hover{border-color:var(--wire);}
+
+  .filterbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:20px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field label{font-size:10.5px;color:var(--dim);font-family:var(--mono);letter-spacing:.02em;}
+  select,input[type=date],input[type=text]{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:7px 10px;font-family:var(--sans);font-size:13px;min-width:130px;}
+  input[type=text]{min-width:180px;}
+  .customrange{display:none;gap:8px;}
+  .customrange.show{display:flex;}
+
+  #stateBanner{display:none;padding:14px 16px;border-radius:8px;margin-bottom:18px;font-size:13px;font-family:var(--mono);}
+  #stateBanner.loading{display:block;background:#12203A;color:#8DB4FF;border:1px solid #2E4E8C;}
+  #stateBanner.error{display:block;background:#3A1518;color:#FFB3AC;border:1px solid #7A2A2A;}
+
+  .kpis{display:grid;grid-template-columns:repeat(8,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line);margin-bottom:24px;}
+  .kpi{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 14px;display:flex;flex-direction:column;gap:6px;}
+  .kpi .lbl{font-size:10.2px;color:var(--dim);font-family:var(--mono);letter-spacing:.02em;}
+  .kpi .val{font-family:var(--mono);font-size:24px;font-weight:600;}
+  .kpi .val.good{color:var(--signal);} .kpi .val.warn{color:var(--amber);} .kpi .val.bad{color:var(--coral);}
+  .kpi .note{font-size:9.5px;color:var(--dimmer);}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:20px;}
+  .panel h2{font-size:14px;font-weight:700;margin-bottom:2px;}
+  .panel .sub{font-size:11.5px;color:var(--dim);margin-bottom:14px;}
+
+  .attn-list{display:flex;flex-direction:column;gap:8px;}
+  .attn-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:#1A1216;border:1px solid #3A2226;border-radius:8px;padding:10px 14px;}
+  .attn-row .name{font-weight:600;font-size:13px;}
+  .attn-row .meta{font-family:var(--mono);font-size:11.5px;color:#F0A79E;}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;}
+  .dot.red{background:var(--coral);} .dot.yellow{background:var(--amber);} .dot.green{background:var(--signal);}
+
+  .dept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+  .dept-card{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px;}
+  .dept-card h3{font-size:13px;margin-bottom:10px;}
+  .dept-stat{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--dim);}
+  .dept-stat b{color:var(--ink);font-family:var(--mono);}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;font-family:var(--mono);font-size:10px;color:var(--dim);font-weight:500;
+    padding:8px 9px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;}
+  th:hover{color:var(--wire);}
+  th.num,td.num{text-align:right;}
+  td{padding:8px 9px;border-bottom:1px solid #1A1D26;}
+  tr.row-red td{background:rgba(232,93,79,0.06);}
+  tr:hover td{background:#171A22;}
+  .empty{color:var(--dimmer);font-size:12px;font-family:var(--mono);padding:18px 0;text-align:center;}
+
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .chart-box{position:relative;height:230px;}
+  @media (max-width:1100px){ .charts-grid{grid-template-columns:1fr;} .kpis{grid-template-columns:repeat(4,1fr);} }
+  @media (max-width:640px){ .kpis{grid-template-columns:repeat(2,1fr);} }
+
+  footer{margin-top:16px;text-align:center;color:var(--dimmer);font-size:11px;font-family:var(--mono);}
+  .badge{display:inline-block;font-family:var(--mono);font-size:9.5px;padding:2px 6px;border-radius:4px;
+    background:#1B1E27;color:var(--dimmer);margin-left:6px;}
 </style>
 </head>
-
 <body>
+<div class="wrap">
 
-<div class="container">
-
-<header class="header">
-
-    <div>
-        <div class="eyebrow">
-            <span class="live-dot"></span>
-            SOVC SALES OPERATIONS · LIVE
-        </div>
-
-        <h1>SOVC Sales & Video Call Dashboard</h1>
+  <header>
+    <div class="brand">
+      <div class="eyebrow"><span class="pulse"></span> SOVC SALES OPS</div>
+      <h1>Live Dashboard</h1>
     </div>
-
-    <div class="header-actions">
-        <span class="updated" id="updatedAt">Not loaded</span>
-        <button id="refreshBtn">↻ Refresh Data</button>
+    <div class="hdr-right">
+      <span class="updated" id="updatedAt">not loaded yet</span>
+      <button class="btn" id="refreshBtn">↻ Refresh Data</button>
     </div>
+  </header>
 
-</header>
+  <div id="stateBanner"></div>
 
-
-<!-- FILTER BAR -->
-
-<section class="filters">
-
+  <div class="filterbar">
     <div class="field">
-        <label>DATE</label>
-
-        <select id="dateFilter">
-            <option value="all">All Time</option>
-            <option value="today">Today</option>
-            <option value="yesterday">Yesterday</option>
-            <option value="7">Last 7 Days</option>
-            <option value="30">Last 30 Days</option>
-            <option value="month">This Month</option>
-            <option value="custom">Custom Range</option>
-        </select>
+      <label>DATE RANGE</label>
+      <select id="dateFilter">
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="7d">Last 7 Days</option>
+        <option value="30d">Last 30 Days</option>
+        <option value="month">This Month</option>
+        <option value="custom">Custom Range</option>
+      </select>
     </div>
-
-
-    <div class="field">
-        <label>DEPARTMENT</label>
-
-        <select id="departmentFilter">
-            <option value="all">All Departments</option>
-        </select>
+    <div class="field customrange" id="customRangeWrap">
+      <div class="field"><label>FROM</label><input type="date" id="dateFrom"></div>
+      <div class="field"><label>TO</label><input type="date" id="dateTo"></div>
     </div>
+    <div class="field"><label>DEPARTMENT</label><select id="deptFilter"><option value="All">All Departments</option></select></div>
+    <div class="field"><label>AGENT</label><select id="agentFilter"><option value="All">All Agents</option></select></div>
+    <div class="field"><label>PRODUCT</label><select id="productFilter"><option value="All">All Products</option></select></div>
+    <div class="field"><label>SEARCH</label><input type="text" id="searchBox" placeholder="agent, customer, product…"></div>
+  </div>
 
+  <div class="kpis" id="kpiRow"></div>
 
-    <div class="field">
-        <label>AGENT</label>
-
-        <select id="agentFilter">
-            <option value="all">All Agents</option>
-        </select>
-    </div>
-
-
-    <div class="field">
-        <label>PRODUCT</label>
-
-        <select id="productFilter">
-            <option value="all">All Products</option>
-        </select>
-    </div>
-
-
-    <div class="field search">
-        <label>SEARCH · AGENT / CUSTOMER / PRODUCT / DEPARTMENT</label>
-
-        <input
-            id="searchInput"
-            type="search"
-            placeholder="Search..."
-        >
-    </div>
-
-
-    <div class="field">
-        <label>&nbsp;</label>
-
-        <button id="resetBtn">
-            Reset
-        </button>
-    </div>
-
-</section>
-
-
-<!-- CUSTOM DATE -->
-
-<div
-    class="custom-range"
-    id="customRange"
->
-
-    <div class="field">
-        <label>FROM</label>
-        <input type="date" id="fromDate">
-    </div>
-
-    <div class="field">
-        <label>TO</label>
-        <input type="date" id="toDate">
-    </div>
-
-</div>
-
-
-<div class="status" id="status"></div>
-
-<div class="loading" id="loading">
-    Loading live Google Sheet data...
-</div>
-
-
-<!-- KPI -->
-
-<section class="kpis" id="kpiRow"></section>
-
-
-<!-- ALERTS -->
-
-<section class="panel">
-
+  <div class="panel">
     <h2>⚠️ Agents Requiring Attention</h2>
+    <div class="sub" id="attnSub">Agents with missed video calls, sorted by most missed</div>
+    <div class="attn-list" id="attnList"></div>
+  </div>
 
-    <div class="subtitle">
-        Agents with missed video-call demos, sorted by highest missed count.
-    </div>
-
-    <div class="alerts" id="alerts"></div>
-
-</section>
-
-
-<!-- DEPARTMENTS -->
-
-<section class="panel">
-
+  <div class="panel">
     <h2>Department Performance</h2>
+    <div class="sub">Grouped directly from the "department" column in your sheet</div>
+    <div class="dept-grid" id="deptGrid"></div>
+  </div>
 
-    <div class="subtitle">
-        Department and agent grouping is calculated from the Google Sheet.
-    </div>
-
-    <div class="departments" id="departmentGrid"></div>
-
-</section>
-
-
-<!-- AGENTS -->
-
-<section class="panel">
-
+  <div class="panel">
     <h2>Agent Performance</h2>
-
-    <div class="subtitle">
-        Click any column heading to sort the table.
+    <div class="sub">Click a column header to sort</div>
+    <div style="overflow-x:auto;">
+    <table id="agentTable">
+      <thead><tr>
+        <th data-k="agent">Agent</th><th data-k="department">Dept</th>
+        <th class="num" data-k="total">Scheduled</th><th class="num" data-k="completed">Completed</th>
+        <th class="num" data-k="missed">Missed</th><th class="num" data-k="pending">Pending</th>
+        <th class="num" data-k="attendance">Attendance</th><th class="num" data-k="sold">Sales</th>
+        <th class="num" data-k="conversion">Conversion</th>
+      </tr></thead>
+      <tbody id="agentBody"></tbody>
+    </table>
     </div>
-
-    <div class="table-wrap">
-
-        <table>
-
-            <thead>
-
-            <tr>
-
-                <th data-sort="agent">Agent ↕</th>
-                <th data-sort="department">Department</th>
-
-                <th class="num" data-sort="total">
-                    Demos ↕
-                </th>
-
-                <th class="num" data-sort="completed">
-                    Completed ↕
-                </th>
-
-                <th class="num" data-sort="missed">
-                    Missed ↕
-                </th>
-
-                <th class="num" data-sort="pending">
-                    Pending ↕
-                </th>
-
-                <th class="num" data-sort="attendance">
-                    Attendance ↕
-                </th>
-
-                <th class="num" data-sort="sales">
-                    Sales ↕
-                </th>
-
-                <th class="num" data-sort="conversion">
-                    Conversion ↕
-                </th>
-
-                <th class="num" data-sort="amount">
-                    Sales Amount ↕
-                </th>
-
-            </tr>
-
-            </thead>
-
-            <tbody id="agentBody"></tbody>
-
-        </table>
-
-    </div>
-
-    <div
-        class="empty"
-        id="agentEmpty"
-        style="display:none"
-    >
-        No agent records match the current filters.
-    </div>
-
-</section>
-
-
-<!-- CHARTS -->
-
-<section class="panel">
-
-    <h2>Sales & Demo Analytics</h2>
-
-    <div class="subtitle">
-        Charts automatically update with the active filters.
-    </div>
-
-    <div class="chart-grid">
-
-        <div>
-            <h3 style="font-size:12px;margin-bottom:10px">
-                Demos by Department
-            </h3>
-
-            <div class="chart-box">
-                <canvas id="departmentChart"></canvas>
-            </div>
-        </div>
-
-
-        <div>
-            <h3 style="font-size:12px;margin-bottom:10px">
-                Agent Attendance
-            </h3>
-
-            <div class="chart-box">
-                <canvas id="attendanceChart"></canvas>
-            </div>
-        </div>
-
-
-        <div>
-            <h3 style="font-size:12px;margin-bottom:10px">
-                Demos vs Sales
-            </h3>
-
-            <div class="chart-box">
-                <canvas id="salesChart"></canvas>
-            </div>
-        </div>
-
-
-        <div>
-            <h3 style="font-size:12px;margin-bottom:10px">
-                Daily Demo Trend
-            </h3>
-
-            <div class="chart-box">
-                <canvas id="trendChart"></canvas>
-            </div>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- PRODUCTS -->
-
-<section class="panel">
-
-    <h2>Most Demonstrated Products</h2>
-
-    <div class="subtitle">
-        Products are ranked using the Product column from the live sheet.
-    </div>
-
-
-    <div class="product-layout">
-
-        <div>
-
-            <div
-                class="product-list"
-                id="productList"
-            ></div>
-
-            <div
-                class="note"
-                id="productNote"
-            ></div>
-
-        </div>
-
-
-        <div>
-
-            <div class="table-wrap">
-
-                <table style="min-width:650px">
-
-                    <thead>
-
-                    <tr>
-
-                        <th>Product</th>
-                        <th class="num">Demos</th>
-                        <th class="num">Completed</th>
-                        <th class="num">Missed</th>
-                        <th class="num">Sales</th>
-                        <th class="num">Conversion</th>
-
-                    </tr>
-
-                    </thead>
-
-                    <tbody id="productBody"></tbody>
-
-                </table>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<footer>
-    Live source: Google Sheets CSV · Automatic refresh every 5 minutes
-</footer>
-
+    <div class="empty" id="agentEmpty" style="display:none;">No records match the current filters</div>
+  </div>
+
+  <div class="panel">
+    <h2>Product Demo Analysis <span class="badge" id="productFieldBadge"></span></h2>
+    <div class="sub">Most demonstrated products, and which ones convert</div>
+    <div class="chart-box" style="height:280px;"><canvas id="productChart"></canvas></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="panel"><h2>Demos by Department</h2><div class="chart-box"><canvas id="deptChart"></canvas></div></div>
+    <div class="panel"><h2>Agent Attendance</h2><div class="chart-box"><canvas id="attendanceChart"></canvas></div></div>
+    <div class="panel"><h2>Demos vs Sales</h2><div class="chart-box"><canvas id="demoSalesChart"></canvas></div></div>
+    <div class="panel"><h2>Demo Trend</h2><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
+  </div>
+
+  <footer id="footerNote">Source: Google Sheet, published-to-web CSV · auto-refreshes every 5 minutes</footer>
 </div>
-
 
 <script>
-
-/* ============================================================
-   CONFIGURATION
-   ============================================================ */
-
+/* =====================================================================
+   1. CONFIG
+   ===================================================================== */
 const CONFIG = {
-
-    CSV_URL:
-        "https://docs.google.com/spreadsheets/d/1stpXcIC8f_sz34YTqW5mcnQIm6l3Oucbe8eBTBiAH6Y/export?format=csv&gid=1959966043",
-
-    REFRESH_INTERVAL:
-        5 * 60 * 1000
+  CSV_URL: "PASTE_YOUR_PUBLISHED_CSV_LINK_HERE",
+  REFRESH_INTERVAL: 5 * 60 * 1000
 };
 
-
-/* ============================================================
-   COLUMN MAPPING
-   The dashboard does not require exact column names.
-   ============================================================ */
-
+/* =====================================================================
+   2. FIELD MAPPING — reads the sheet's ACTUAL header row and maps it
+   to canonical fields by fuzzy alias matching. Nothing is invented:
+   if a canonical field has no match, it stays null and the UI marks
+   that metric/column as unavailable instead of faking data.
+   ===================================================================== */
 const FIELD_ALIASES = {
-
-    date: [
-        "date",
-        "demo date",
-        "call date"
-    ],
-
-    time: [
-        "time",
-        "demo time",
-        "call time"
-    ],
-
-    department: [
-        "department",
-        "dept",
-        "team"
-    ],
-
-    agent: [
-        "agent name",
-        "agent",
-        "agentname",
-        "sales agent"
-    ],
-
-    customer: [
-        "customer",
-        "customer no",
-        "customer no.",
-        "customer number",
-        "customer phone",
-        "phone",
-        "mobile"
-    ],
-
-    product: [
-        "product",
-        "product name",
-        "product title"
-    ],
-
-    category: [
-        "product category",
-        "category",
-        "product type"
-    ],
-
-    demoStatus: [
-        "demo status",
-        "demo_status",
-        "call status",
-        "video call status",
-        "status"
-    ],
-
-    demoOutcome: [
-        "demo outcome",
-        "outcome",
-        "call outcome"
-    ],
-
-    saleStatus: [
-        "sale status",
-        "sales status",
-        "order status",
-        "order"
-    ],
-
-    saleAmount: [
-        "sale amount",
-        "sales amount",
-        "amount",
-        "order amount",
-        "revenue",
-        "aov",
-        "order value"
-    ],
-
-    remarks: [
-        "remarks",
-        "remark",
-        "notes",
-        "comments",
-        "comment"
-    ]
+  date:        ["date"],
+  time:        ["time"],
+  department:  ["department", "dept"],
+  agent:       ["agent name", "agent"],
+  customer:    ["customer name", "customer", "customer no", "customer no.", "customer id"],
+  product:     ["product name", "product"],
+  category:    ["product category", "category"],
+  demoStatus:  ["demo status", "video call status", "call status"],
+  saleStatus:  ["order status", "sale status", "sales status"],
+  saleAmount:  ["sale amount", "order value", "aov", "amount"],
+  remarks:     ["remarks", "notes", "remarks/notes"]
 };
 
-
-/* ============================================================
-   STATE
-   ============================================================ */
-
-let allRows = [];
-
-let filteredRows = [];
-
-let charts = {};
-
-let sortKey = "sales";
-
-let sortDirection = -1;
-
-
-/* ============================================================
-   HELPERS
-   ============================================================ */
-
-const $ = id =>
-    document.getElementById(id);
-
-
-function clean(value) {
-
-    return String(value ?? "").trim();
-
+function buildFieldMap(headers){
+  const norm = h => (h || "").toString().trim().toLowerCase();
+  const map = {};
+  Object.keys(FIELD_ALIASES).forEach(canon => {
+    const aliases = FIELD_ALIASES[canon];
+    const found = headers.find(h => aliases.includes(norm(h)));
+    map[canon] = found || null;
+  });
+  return map;
 }
 
+let FIELD_MAP = {};
+let FIELD_AVAILABILITY_NOTED = false;
 
-function normalize(value) {
+/* =====================================================================
+   3. STATE
+   ===================================================================== */
+let RAW_ROWS = [];
+let ACTIVE_PRODUCT_FIELD = null;
+let sortState = { key: "sold", dir: "desc" };
+const charts = {};
 
-    return clean(value)
-        .toLowerCase()
-        .replace(/[._-]+/g, " ")
-        .replace(/\s+/g, " ");
+const $ = id => document.getElementById(id);
+const trim = v => (v === null || v === undefined) ? "" : v.toString().trim();
 
+/* =====================================================================
+   4. DATA FETCHING
+   ===================================================================== */
+async function fetchSheet(){
+  if (!CONFIG.CSV_URL || !CONFIG.CSV_URL.startsWith("http")){
+    throw new Error("CSV_URL is not configured. Open index.html, find the CONFIG block, and paste your Google Sheet's published CSV link into CSV_URL.");
+  }
+  const res = await fetch(CONFIG.CSV_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error("Google Sheet fetch failed (HTTP " + res.status + "). Check that the sheet is still published to web.");
+  const text = await res.text();
+  const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+  if (!parsed.data || !parsed.data.length){
+    throw new Error("The published sheet returned no rows. Check the correct tab is published.");
+  }
+  return parsed;
 }
 
-
-function escapeHTML(value) {
-
-    return clean(value)
-        .replace(/[&<>"']/g, char => {
-
-            return {
-
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                '"': "&quot;",
-                "'": "&#039;"
-
-            }[char];
-
-        });
-
+/* =====================================================================
+   5. PARSING + NORMALIZATION
+   ===================================================================== */
+function normalizeStatus(raw, kind){
+  const s = trim(raw).toLowerCase();
+  if (!s) return "Unknown";
+  if (kind === "demo"){
+    if (s.includes("complet")) return "Completed";
+    if (s.includes("miss")) return "Missed";
+    if (s.includes("pend")) return "Pending";
+    if (s.includes("cancel")) return "Cancelled";
+    return "Other";
+  }
+  if (kind === "sale"){
+    if (s.includes("sold") || s.includes("won") || s.includes("success")) return "Sold";
+    if (s.includes("cancel")) return "Cancelled";
+    if (s.includes("pend")) return "Pending";
+    if (s.includes("not interest")) return "Not Interested";
+    if (s.includes("no response")) return "No Response";
+    if (s.includes("stock")) return "Out of Stock";
+    return "Other";
+  }
+  return trim(raw);
 }
 
-
-function percentage(value) {
-
-    return (value * 100).toFixed(1) + "%";
-
+function parseDateSafe(raw){
+  const s = trim(raw);
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
 }
 
-
-function money(value) {
-
-    if (!value) {
-        return "₹0";
-    }
-
-    return new Intl.NumberFormat(
-        "en-IN",
-        {
-            style: "currency",
-            currency: "INR",
-            maximumFractionDigits: 0
-        }
-    ).format(value);
-
+function parseAmount(raw){
+  const s = trim(raw).replace(/[₹,]/g, "");
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
 }
 
-
-/* ============================================================
-   DATE
-   ============================================================ */
-
-function parseDate(value) {
-
-    const string = clean(value);
-
-    if (!string) {
-        return null;
-    }
-
-    if (/^\d{4}-\d{2}-\d{2}/.test(string)) {
-
-        const date =
-            new Date(
-                string.substring(0, 10) +
-                "T00:00:00"
-            );
-
-        return isNaN(date) ? null : date;
-    }
-
-
-    const parts =
-        string.match(
-            /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/
-        );
-
-
-    if (parts) {
-
-        const date =
-            new Date(
-                Number(parts[3]),
-                Number(parts[1]) - 1,
-                Number(parts[2])
-            );
-
-        return isNaN(date) ? null : date;
-    }
-
-
-    const date = new Date(string);
-
-    return isNaN(date) ? null : date;
-}
-
-
-function dateKey(date) {
-
-    if (!date) {
-        return "";
-    }
-
-    return date
-        .toISOString()
-        .substring(0, 10);
-}
-
-
-/* ============================================================
-   MONEY
-   ============================================================ */
-
-function parseMoney(value) {
-
-    const cleaned =
-        clean(value)
-            .replace(/[₹,$€£\s]/g, "")
-            .replace(/,/g, "");
-
-    const number = Number(cleaned);
-
-    return Number.isFinite(number)
-        ? number
-        : 0;
-}
-
-
-/* ============================================================
-   STATUS NORMALIZATION
-   ============================================================ */
-
-function normalizeDemoStatus(value) {
-
-    const valueNormalized = normalize(value);
-
-    if (
-        [
-            "completed",
-            "complete",
-            "done",
-            "attended",
-            "attended demo",
-            "successful"
-        ].includes(valueNormalized)
-    ) {
-        return "completed";
-    }
-
-
-    if (
-        [
-            "pending",
-            "scheduled",
-            "upcoming",
-            "booked",
-            "in progress"
-        ].includes(valueNormalized)
-    ) {
-        return "pending";
-    }
-
-
-    if (
-        [
-            "missed",
-            "no show",
-            "no-show",
-            "not attended",
-            "not attended demo",
-            "absent",
-            "cancelled",
-            "canceled"
-        ].includes(valueNormalized)
-    ) {
-        return "missed";
-    }
-
-
-    return valueNormalized;
-}
-
-
-function normalizeSaleStatus(value) {
-
-    const valueNormalized =
-        normalize(value);
-
-
-    if (
-        [
-            "sold",
-            "sale",
-            "success",
-            "successful",
-            "ordered",
-            "order placed",
-            "completed"
-        ].includes(valueNormalized)
-    ) {
-        return "sale";
-    }
-
-
-    if (
-        [
-            "pending",
-            "open",
-            "follow up",
-            "followup"
-        ].includes(valueNormalized)
-    ) {
-        return "pending";
-    }
-
-
-    if (
-        [
-            "not sold",
-            "not sale",
-            "lost",
-            "cancelled",
-            "canceled",
-            "failed"
-        ].includes(valueNormalized)
-    ) {
-        return "lost";
-    }
-
-
-    return valueNormalized;
-}
-
-
-/* ============================================================
-   HEADER MAPPING
-   ============================================================ */
-
-function buildHeaderMap(headers) {
-
-    const map = {};
-
-    headers.forEach(header => {
-
-        const normalizedHeader =
-            normalize(header);
-
-
-        Object.entries(FIELD_ALIASES)
-            .forEach(([field, aliases]) => {
-
-                if (map[field]) {
-                    return;
-                }
-
-                if (
-                    aliases
-                        .map(normalize)
-                        .includes(normalizedHeader)
-                ) {
-                    map[field] = header;
-                }
-
-            });
-
-    });
-
-
-    return map;
-}
-
-
-/* ============================================================
-   DATA NORMALIZATION
-   ============================================================ */
-
-function normalizeRows(rawRows) {
-
-    if (!rawRows.length) {
-        return [];
-    }
-
-
-    const headerMap =
-        buildHeaderMap(
-            Object.keys(rawRows[0])
-        );
-
-
-    const normalized =
-        rawRows.map(row => {
-
-            const get = field => {
-
-                if (!headerMap[field]) {
-                    return "";
-                }
-
-                return clean(
-                    row[headerMap[field]]
-                );
-
-            };
-
-
-            const date =
-                parseDate(
-                    get("date")
-                );
-
-
-            return {
-
-                date,
-
-                dateKey:
-                    dateKey(date),
-
-                time:
-                    get("time"),
-
-                department:
-                    get("department") ||
-                    "Unassigned",
-
-                agent:
-                    get("agent") ||
-                    "Unassigned",
-
-                customer:
-                    get("customer"),
-
-                product:
-                    get("product"),
-
-                category:
-                    get("category"),
-
-                demoStatus:
-                    normalizeDemoStatus(
-                        get("demoStatus")
-                    ),
-
-                demoOutcome:
-                    normalizeDemoStatus(
-                        get("demoOutcome")
-                    ),
-
-                saleStatus:
-                    normalizeSaleStatus(
-                        get("saleStatus")
-                    ),
-
-                saleAmount:
-                    parseMoney(
-                        get("saleAmount")
-                    ),
-
-                remarks:
-                    get("remarks")
-
-            };
-
-        });
-
-
-    return removeExactDuplicates(
-        normalized
-    );
-}
-
-
-/* ============================================================
-   DUPLICATE PROTECTION
-   ============================================================ */
-
-function removeExactDuplicates(rows) {
-
-    const seen = new Set();
-
-    return rows.filter(row => {
-
-        const key =
-            JSON.stringify(row);
-
-        if (seen.has(key)) {
-            return false;
-        }
-
-        seen.add(key);
-
-        return true;
-    });
-}
-
-
-/* ============================================================
-   LOAD GOOGLE SHEET
-   ============================================================ */
-
-async function loadData() {
-
-    setLoading(true);
-
-    clearStatus();
-
-    $("updatedAt").textContent =
-        "Loading...";
-
-
-    try {
-
-        const response =
-            await fetch(
-                CONFIG.CSV_URL,
-                {
-                    cache: "no-store"
-                }
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "HTTP " +
-                response.status
-            );
-
-        }
-
-
-        const csvText =
-            await response.text();
-
-
-        const parsed =
-            Papa.parse(
-                csvText,
-                {
-                    header: true,
-                    skipEmptyLines: true
-                }
-            );
-
-
-        if (
-            !parsed.data ||
-            !parsed.data.length
-        ) {
-
-            throw new Error(
-                "No rows were found in the Google Sheet."
-            );
-
-        }
-
-
-        allRows =
-            normalizeRows(
-                parsed.data
-            );
-
-
-        if (!allRows.length) {
-
-            throw new Error(
-                "No usable records were found."
-            );
-
-        }
-
-
-        populateFilters();
-
-        applyFilters();
-
-
-        $("updatedAt").textContent =
-            "Updated " +
-            new Date()
-                .toLocaleString();
-
-    }
-
-    catch (error) {
-
-        allRows = [];
-
-        filteredRows = [];
-
-        renderDashboard();
-
-
-        showStatus(
-            "Unable to load the live Google Sheet. " +
-            error.message +
-            " Make sure the required sheet tab is published to the web as CSV and accessible without signing in. No fake data has been used."
-        );
-
-
-        $("updatedAt").textContent =
-            "Load failed";
-
-    }
-
-    finally {
-
-        setLoading(false);
-
-    }
-
-}
-
-
-/* ============================================================
-   FILTER OPTIONS
-   ============================================================ */
-
-function populateFilters() {
-
-    populateSelect(
-        "departmentFilter",
-        unique(
-            allRows.map(
-                row => row.department
-            )
-        ),
-        "All Departments"
-    );
-
-
-    populateSelect(
-        "agentFilter",
-        unique(
-            allRows.map(
-                row => row.agent
-            )
-        ),
-        "All Agents"
-    );
-
-
-    populateSelect(
-        "productFilter",
-        unique(
-            allRows
-                .map(row => row.product)
-                .filter(Boolean)
-        ),
-        "All Products"
-    );
-
-}
-
-
-function unique(values) {
-
-    return [
-        ...new Set(
-            values.filter(Boolean)
-        )
-    ].sort(
-        (a,b) =>
-            a.localeCompare(
-                b
-            )
-    );
-
-}
-
-
-function populateSelect(
-    id,
-    values,
-    firstLabel
-) {
-
-    const select = $(id);
-
-    const oldValue =
-        select.value;
-
-
-    select.innerHTML =
-        '<option value="all">' +
-        firstLabel +
-        "</option>" +
-
-        values
-            .map(
-                value =>
-                    '<option value="' +
-                    escapeHTML(value) +
-                    '">' +
-                    escapeHTML(value) +
-                    "</option>"
-            )
-            .join("");
-
-
-    if (
-        values.includes(oldValue)
-    ) {
-
-        select.value =
-            oldValue;
-
-    }
-
-}
-
-
-/* ============================================================
-   DATE FILTER
-   ============================================================ */
-
-function dateMatches(row) {
-
-    const mode =
-        $("dateFilter").value;
-
-
-    if (mode === "all") {
-        return true;
-    }
-
-
-    if (!row.date) {
-        return false;
-    }
-
-
-    const rowDate =
-        new Date(row.date);
-
-    rowDate.setHours(
-        0,0,0,0
-    );
-
-
-    const today =
-        new Date();
-
-    today.setHours(
-        0,0,0,0
-    );
-
-
-    if (mode === "today") {
-
-        return (
-            rowDate.getTime() ===
-            today.getTime()
-        );
-
-    }
-
-
-    if (mode === "yesterday") {
-
-        const yesterday =
-            new Date(today);
-
-        yesterday.setDate(
-            yesterday.getDate() - 1
-        );
-
-        return (
-            rowDate.getTime() ===
-            yesterday.getTime()
-        );
-
-    }
-
-
-    if (
-        mode === "7" ||
-        mode === "30"
-    ) {
-
-        const days =
-            Number(mode);
-
-        const start =
-            new Date(today);
-
-        start.setDate(
-            start.getDate() -
-            (days - 1)
-        );
-
-        return (
-            rowDate >= start &&
-            rowDate <= today
-        );
-
-    }
-
-
-    if (mode === "month") {
-
-        return (
-            rowDate.getFullYear() ===
-            today.getFullYear() &&
-
-            rowDate.getMonth() ===
-            today.getMonth()
-        );
-
-    }
-
-
-    if (mode === "custom") {
-
-        const from =
-            $("fromDate").value
-                ? new Date(
-                    $("fromDate").value +
-                    "T00:00:00"
-                )
-                : null;
-
-
-        const to =
-            $("toDate").value
-                ? new Date(
-                    $("toDate").value +
-                    "T23:59:59"
-                )
-                : null;
-
-
-        return (
-            (!from || rowDate >= from) &&
-            (!to || rowDate <= to)
-        );
-
-    }
-
-
-    return true;
-}
-
-
-/* ============================================================
-   APPLY FILTERS
-   ============================================================ */
-
-function applyFilters() {
-
-    const department =
-        normalize(
-            $("departmentFilter").value
-        );
-
-
-    const agent =
-        normalize(
-            $("agentFilter").value
-        );
-
-
-    const product =
-        normalize(
-            $("productFilter").value
-        );
-
-
-    const search =
-        normalize(
-            $("searchInput").value
-        );
-
-
-    filteredRows =
-        allRows.filter(row => {
-
-            if (
-                !dateMatches(row)
-            ) {
-                return false;
-            }
-
-
-            if (
-                department !== "all" &&
-                normalize(row.department) !==
-                department
-            ) {
-                return false;
-            }
-
-
-            if (
-                agent !== "all" &&
-                normalize(row.agent) !==
-                agent
-            ) {
-                return false;
-            }
-
-
-            if (
-                product !== "all" &&
-                normalize(row.product) !==
-                product
-            ) {
-                return false;
-            }
-
-
-            if (search) {
-
-                const searchable =
-                    normalize(
-                        [
-                            row.agent,
-                            row.customer,
-                            row.product,
-                            row.department
-                        ].join(" ")
-                    );
-
-
-                if (
-                    !searchable.includes(
-                        search
-                    )
-                ) {
-                    return false;
-                }
-
-            }
-
-
-            return true;
-
-        });
-
-
-    renderDashboard();
-
-}
-
-
-/* ============================================================
-   CORE METRICS
-   ============================================================ */
-
-function calculateMetrics(rows) {
-
-    const total =
-        rows.length;
-
-
-    const completed =
-        rows.filter(
-            row =>
-                row.demoStatus ===
-                "completed"
-        ).length;
-
-
-    const missed =
-        rows.filter(
-            row =>
-                row.demoStatus ===
-                "missed"
-        ).length;
-
-
-    const pending =
-        rows.filter(
-            row =>
-                row.demoStatus ===
-                "pending"
-        ).length;
-
-
-    const salesRows =
-        rows.filter(
-            row =>
-                row.saleStatus ===
-                "sale"
-        );
-
-
-    const sales =
-        salesRows.length;
-
-
-    const salesAmount =
-        salesRows.reduce(
-            (sum,row) =>
-                sum +
-                row.saleAmount,
-            0
-        );
-
-
-    return {
-
-        total,
-
-        completed,
-
-        missed,
-
-        pending,
-
-        attendance:
-            total
-                ? completed / total
-                : 0,
-
-        sales,
-
-        salesAmount,
-
-        conversion:
-            completed
-                ? sales / completed
-                : 0
-
+function normalizeRows(csvRows, map){
+  const seen = new Set();
+  const out = [];
+  csvRows.forEach(r => {
+    const hasAny = Object.values(r).some(v => trim(v) !== "");
+    if (!hasAny) return;
+
+    const dateRaw = map.date ? r[map.date] : "";
+    const dateObj = parseDateSafe(dateRaw);
+
+    const row = {
+      dateRaw: trim(dateRaw),
+      date: dateObj,
+      department: map.department ? (trim(r[map.department]) || "Unassigned") : "Unassigned",
+      agent: map.agent ? (trim(r[map.agent]) || "Unknown Agent") : "Unknown Agent",
+      customer: map.customer ? trim(r[map.customer]) : "",
+      product: map.product ? trim(r[map.product]) : "",
+      category: map.category ? trim(r[map.category]) : "",
+      demoStatus: map.demoStatus ? normalizeStatus(r[map.demoStatus], "demo") : "Unknown",
+      saleStatus: map.saleStatus ? normalizeStatus(r[map.saleStatus], "sale") : "Unknown",
+      saleAmount: map.saleAmount ? parseAmount(r[map.saleAmount]) : null,
+      remarks: map.remarks ? trim(r[map.remarks]) : ""
     };
 
+    row.departmentKey = row.department.toLowerCase();
+    row.agentKey = row.agent.toLowerCase();
+
+    const sig = [row.dateRaw, row.agentKey, row.customer.toLowerCase(), row.product.toLowerCase(), row.category.toLowerCase()].join("|");
+    row._dup = seen.has(sig) && sig !== "|||";
+    seen.add(sig);
+
+    out.push(row);
+  });
+  return out;
 }
 
-
-/* ============================================================
-   RENDER EVERYTHING
-   ============================================================ */
-
-function renderDashboard() {
-
-    renderKPIs();
-
-    renderAlerts();
-
-    renderDepartments();
-
-    renderAgents();
-
-    renderProducts();
-
-    renderCharts();
-
+/* =====================================================================
+   6. FILTERING
+   ===================================================================== */
+function inDateRange(row, filterVal, from, to){
+  if (filterVal === "all") return true;
+  if (!row.date) return false;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(row.date); d.setHours(0,0,0,0);
+  if (filterVal === "today") return d.getTime() === now.getTime();
+  if (filterVal === "yesterday"){ const y = new Date(now); y.setDate(y.getDate()-1); return d.getTime() === y.getTime(); }
+  if (filterVal === "7d"){ const s = new Date(now); s.setDate(s.getDate()-6); return d >= s && d <= now; }
+  if (filterVal === "30d"){ const s = new Date(now); s.setDate(s.getDate()-29); return d >= s && d <= now; }
+  if (filterVal === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  if (filterVal === "custom"){
+    if (from && d < new Date(from)) return false;
+    if (to && d > new Date(to)) return false;
+    return true;
+  }
+  return true;
 }
 
+function getFilteredRows(){
+  const dateVal = $("dateFilter").value;
+  const from = $("dateFrom").value, to = $("dateTo").value;
+  const dept = $("deptFilter").value;
+  const agent = $("agentFilter").value;
+  const product = $("productFilter").value;
+  const q = trim($("searchBox").value).toLowerCase();
 
-/* ============================================================
-   KPI
-   ============================================================ */
-
-function renderKPIs() {
-
-    const metrics =
-        calculateMetrics(
-            filteredRows
-        );
-
-
-    const cards = [
-
-        [
-            "TOTAL DEMOS",
-            metrics.total,
-            ""
-        ],
-
-        [
-            "COMPLETED",
-            metrics.completed,
-            "green"
-        ],
-
-        [
-            "MISSED",
-            metrics.missed,
-            metrics.missed
-                ? "red"
-                : ""
-        ],
-
-        [
-            "PENDING",
-            metrics.pending,
-            metrics.pending
-                ? "yellow"
-                : ""
-        ],
-
-        [
-            "ATTENDANCE",
-            percentage(
-                metrics.attendance
-            ),
-            metrics.attendance >= .8
-                ? "green"
-                : metrics.attendance >= .6
-                    ? "yellow"
-                    : "red"
-        ],
-
-        [
-            "SALES",
-            metrics.sales,
-            "green"
-        ],
-
-        [
-            "CONVERSION",
-            percentage(
-                metrics.conversion
-            ),
-            metrics.conversion >= .3
-                ? "green"
-                : metrics.conversion >= .15
-                    ? "yellow"
-                    : "red"
-        ],
-
-        [
-            "SALES AMOUNT",
-            metrics.salesAmount
-                ? money(
-                    metrics.salesAmount
-                )
-                : "N/A",
-            metrics.salesAmount
-                ? "green"
-                : "muted"
-        ]
-
-    ];
-
-
-    $("kpiRow").innerHTML =
-        cards
-            .map(
-                card =>
-
-                    '<div class="kpi">' +
-
-                        '<div class="kpi-label">' +
-                        card[0] +
-                        "</div>" +
-
-                        '<div class="kpi-value ' +
-                        card[2] +
-                        '">' +
-                        card[1] +
-                        "</div>" +
-
-                    "</div>"
-
-            )
-            .join("");
-
+  return RAW_ROWS.filter(r => {
+    if (!inDateRange(r, dateVal, from, to)) return false;
+    if (dept !== "All" && r.department !== dept) return false;
+    if (agent !== "All" && r.agent !== agent) return false;
+    if (product !== "All"){
+      const pval = ACTIVE_PRODUCT_FIELD === "product" ? r.product : r.category;
+      if (pval !== product) return false;
+    }
+    if (q){
+      const hay = [r.agent, r.customer, r.product, r.category, r.department].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
 }
 
+/* =====================================================================
+   7. KPI CALCULATIONS
+   ===================================================================== */
+function computeKpis(rows){
+  const total = rows.length;
+  const completed = rows.filter(r => r.demoStatus === "Completed").length;
+  const missed = rows.filter(r => r.demoStatus === "Missed").length;
+  const pending = rows.filter(r => r.demoStatus === "Pending").length;
+  const sold = rows.filter(r => r.saleStatus === "Sold").length;
+  const attendance = total ? completed / total : 0;
+  const conversion = completed ? sold / completed : 0;
+  const customers = new Set(rows.map(r => r.customer.toLowerCase()).filter(Boolean)).size;
+  const missedStatusExists = RAW_ROWS.some(r => r.demoStatus === "Missed");
+  return { total, completed, missed, pending, sold, attendance, conversion, customers, missedStatusExists };
+}
 
-/* ============================================================
-   AGENTS REQUIRING ATTENTION
-   ============================================================ */
+/* =====================================================================
+   8. DEPARTMENT CALCULATIONS
+   ===================================================================== */
+function computeDepartments(rows){
+  const byKey = {};
+  rows.forEach(r => {
+    const k = r.departmentKey;
+    if (!byKey[k]) byKey[k] = { label: r.department, total:0, completed:0, missed:0, pending:0, sold:0 };
+    const d = byKey[k];
+    d.total++;
+    if (r.demoStatus === "Completed") d.completed++;
+    if (r.demoStatus === "Missed") d.missed++;
+    if (r.demoStatus === "Pending") d.pending++;
+    if (r.saleStatus === "Sold") d.sold++;
+  });
+  return Object.values(byKey).map(d => ({
+    ...d,
+    attendance: d.total ? d.completed/d.total : 0,
+    conversion: d.completed ? d.sold/d.completed : 0
+  })).sort((a,b) => b.total - a.total);
+}
 
-function renderAlerts() {
+/* =====================================================================
+   9. AGENT CALCULATIONS
+   ===================================================================== */
+function computeAgents(rows){
+  const byKey = {};
+  rows.forEach(r => {
+    const k = r.agentKey;
+    if (!byKey[k]) byKey[k] = { agent: r.agent, department: r.department, total:0, completed:0, missed:0, pending:0, sold:0 };
+    const a = byKey[k];
+    a.total++;
+    if (r.demoStatus === "Completed") a.completed++;
+    if (r.demoStatus === "Missed") a.missed++;
+    if (r.demoStatus === "Pending") a.pending++;
+    if (r.saleStatus === "Sold") a.sold++;
+  });
+  return Object.values(byKey).map(a => ({
+    ...a,
+    attendance: a.total ? a.completed/a.total : 0,
+    conversion: a.completed ? a.sold/a.completed : 0
+  }));
+}
 
-    const agents = {};
+/* =====================================================================
+   10. PRODUCT CALCULATIONS
+   ===================================================================== */
+function decideProductField(rows){
+  const hasProductNames = rows.some(r => r.product);
+  return hasProductNames ? "product" : "category";
+}
 
+function computeProducts(rows, field){
+  const byKey = {};
+  rows.forEach(r => {
+    const name = field === "product" ? r.product : r.category;
+    if (!name) return;
+    if (!byKey[name]) byKey[name] = { name, total:0, completed:0, missed:0, sold:0 };
+    const p = byKey[name];
+    p.total++;
+    if (r.demoStatus === "Completed") p.completed++;
+    if (r.demoStatus === "Missed") p.missed++;
+    if (r.saleStatus === "Sold") p.sold++;
+  });
+  const list = Object.values(byKey).map(p => ({ ...p, conversion: p.completed ? p.sold/p.completed : 0 }));
+  list.sort((a,b) => b.total - a.total);
+  return list;
+}
 
-    filteredRows.forEach(row => {
+/* =====================================================================
+   11. UI RENDERING
+   ===================================================================== */
+function statusClass(pct){ return pct >= 0.8 ? "good" : (pct >= 0.5 ? "warn" : "bad"); }
+function dotClass(pct){ return pct >= 0.8 ? "green" : (pct >= 0.5 ? "yellow" : "red"); }
+function pct1(x){ return (x*100).toFixed(1) + "%"; }
+function pct0(x){ return Math.round(x*100) + "%"; }
 
-        if (!agents[row.agent]) {
+function renderKpis(k){
+  const cards = [
+    ["TOTAL DEMOS", k.total, "", ""],
+    ["COMPLETED", k.completed, "good", ""],
+    ["MISSED", k.missed, k.missed > 0 ? "bad" : "", k.missedStatusExists ? "" : "no 'Missed' value found in sheet yet"],
+    ["PENDING", k.pending, k.pending > 0 ? "warn" : "", ""],
+    ["ATTENDANCE %", pct1(k.attendance), statusClass(k.attendance), ""],
+    ["TOTAL SALES", k.sold, "good", ""],
+    ["SALES CONVERSION", pct1(k.conversion), statusClass(k.conversion), ""],
+    ["DEMO CUSTOMERS", k.customers, "", ""]
+  ];
+  $("kpiRow").innerHTML = cards.map(([lbl,val,cls,note]) =>
+    `<div class="kpi"><div class="lbl">${lbl}</div><div class="val ${cls}">${val}</div>${note?`<div class="note">${note}</div>`:""}</div>`
+  ).join("");
+}
 
-            agents[row.agent] = {
+function renderAttention(agents){
+  const list = agents.filter(a => a.missed > 0).sort((a,b) => b.missed - a.missed);
+  if (!RAW_ROWS.some(r => r.demoStatus === "Missed")){
+    $("attnSub").textContent = "Your Demo status column doesn't currently include a \"Missed\" value (only what's in the sheet's dropdown is read) — add that status in the sheet to populate this section.";
+    $("attnList").innerHTML = `<div class="empty">No missed-demo data available yet</div>`;
+    return;
+  }
+  $("attnSub").textContent = "Agents with missed video calls, sorted by most missed";
+  $("attnList").innerHTML = list.length ? list.map(a => `
+    <div class="attn-row">
+      <div class="name"><span class="dot ${dotClass(a.attendance)}"></span>${a.agent} <span style="color:var(--dim);font-weight:400;">· ${a.department}</span></div>
+      <div class="meta">Missed: ${a.missed} &nbsp;|&nbsp; Attendance: ${pct0(a.attendance)}</div>
+    </div>`).join("") : `<div class="empty">No agents currently need attention 🎉</div>`;
+}
 
-                total: 0,
+function renderDepartments(depts){
+  $("deptGrid").innerHTML = depts.length ? depts.map(d => `
+    <div class="dept-card">
+      <h3><span class="dot ${dotClass(d.attendance)}"></span>${d.label}</h3>
+      <div class="dept-stat"><span>Total demos</span><b>${d.total}</b></div>
+      <div class="dept-stat"><span>Completed</span><b>${d.completed}</b></div>
+      <div class="dept-stat"><span>Missed</span><b>${d.missed}</b></div>
+      <div class="dept-stat"><span>Pending</span><b>${d.pending}</b></div>
+      <div class="dept-stat"><span>Attendance</span><b>${pct0(d.attendance)}</b></div>
+      <div class="dept-stat"><span>Sales</span><b>${d.sold}</b></div>
+      <div class="dept-stat"><span>Conversion</span><b>${pct0(d.conversion)}</b></div>
+    </div>`).join("") : `<div class="empty">No department data for this filter</div>`;
+}
 
-                completed: 0,
+function renderAgentTable(agents){
+  let list = [...agents];
+  const { key, dir } = sortState;
+  list.sort((a,b) => {
+    let av = a[key], bv = b[key];
+    if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+    if (av < bv) return dir === "asc" ? -1 : 1;
+    if (av > bv) return dir === "asc" ? 1 : -1;
+    return 0;
+  });
+  $("agentEmpty").style.display = list.length ? "none" : "block";
+  $("agentBody").innerHTML = list.map(a => `
+    <tr class="${a.missed > 0 ? 'row-red' : ''}">
+      <td>${a.agent}</td><td>${a.department}</td>
+      <td class="num">${a.total}</td><td class="num">${a.completed}</td>
+      <td class="num">${a.missed}</td><td class="num">${a.pending}</td>
+      <td class="num">${pct0(a.attendance)}</td><td class="num">${a.sold}</td>
+      <td class="num">${pct0(a.conversion)}</td>
+    </tr>`).join("");
+}
 
-                missed: 0
+/* =====================================================================
+   12. CHART RENDERING
+   ===================================================================== */
+function destroyChart(id){ if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
 
-            };
+function renderCharts(rows, depts, agents, products){
+  const gridColor = "#1B1E27", textColor = "#8A8F9C";
+  Chart.defaults.color = textColor;
+  Chart.defaults.borderColor = gridColor;
 
-        }
+  destroyChart("dept");
+  charts.dept = new Chart($("deptChart"), {
+    type: "bar",
+    data: { labels: depts.map(d=>d.label), datasets: [{ label:"Demos", data: depts.map(d=>d.total), backgroundColor:"#3E7BFA" }] },
+    options: { plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true} } }
+  });
 
+  const topAgents = [...agents].sort((a,b)=>b.attendance-a.attendance).slice(0,12);
+  destroyChart("attendance");
+  charts.attendance = new Chart($("attendanceChart"), {
+    type: "bar",
+    data: { labels: topAgents.map(a=>a.agent), datasets: [{ label:"Attendance %", data: topAgents.map(a=>Math.round(a.attendance*100)),
+      backgroundColor: topAgents.map(a=> a.attendance>=0.8?"#39D98A":(a.attendance>=0.5?"#E8B339":"#E85D4F")) }] },
+    options: { indexAxis:"y", plugins:{legend:{display:false}}, scales:{ x:{beginAtZero:true, max:100} } }
+  });
 
-        agents[row.agent].total++;
+  const topProducts = products.slice(0,10);
+  destroyChart("product");
+  charts.product = new Chart($("productChart"), {
+    type: "bar",
+    data: { labels: topProducts.map(p=>p.name), datasets: [{ label:"Demos", data: topProducts.map(p=>p.total), backgroundColor:"#3E7BFA" }] },
+    options: { indexAxis:"y", plugins:{legend:{display:false}}, scales:{ x:{beginAtZero:true} } }
+  });
 
+  destroyChart("demoSales");
+  charts.demoSales = new Chart($("demoSalesChart"), {
+    type: "bar",
+    data: { labels: depts.map(d=>d.label), datasets: [
+      { label:"Demos", data: depts.map(d=>d.total), backgroundColor:"#3E7BFA" },
+      { label:"Sales", data: depts.map(d=>d.sold), backgroundColor:"#39D98A" }
+    ]},
+    options: { scales:{ y:{beginAtZero:true} } }
+  });
 
-        if (
-            row.demoStatus ===
-            "completed"
-        ) {
+  const byDate = {};
+  rows.forEach(r => { if (r.date){ const k = r.date.toISOString().slice(0,10); byDate[k] = (byDate[k]||0)+1; } });
+  const dateKeys = Object.keys(byDate).sort();
+  destroyChart("trend");
+  charts.trend = new Chart($("trendChart"), {
+    type: "line",
+    data: { labels: dateKeys, datasets: [{ label:"Demos", data: dateKeys.map(k=>byDate[k]),
+      borderColor:"#39D98A", backgroundColor:"rgba(57,217,138,0.15)", fill:true, tension:0.25 }] },
+    options: { plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true} } }
+  });
+}
 
-            agents[row.agent]
-                .completed++;
+/* =====================================================================
+   13. FILTER DROPDOWN POPULATION
+   ===================================================================== */
+function populateFilterOptions(){
+  const depts = [...new Set(RAW_ROWS.map(r=>r.department))].sort();
+  const agents = [...new Set(RAW_ROWS.map(r=>r.agent))].sort();
+  const products = [...new Set(RAW_ROWS.map(r => ACTIVE_PRODUCT_FIELD==="product" ? r.product : r.category))].filter(Boolean).sort();
 
-        }
+  const fill = (sel, items, allLabel) => {
+    const cur = sel.value;
+    sel.innerHTML = `<option value="All">${allLabel}</option>` + items.map(v=>`<option value="${v}">${v}</option>`).join("");
+    sel.value = items.includes(cur) ? cur : "All";
+  };
+  fill($("deptFilter"), depts, "All Departments");
+  fill($("agentFilter"), agents, "All Agents");
+  fill($("productFilter"), products, "All Products");
+  $("productFieldBadge").textContent = ACTIVE_PRODUCT_FIELD === "product" ? "by Product Name" : "by Product Category (Product Name is empty in sheet)";
+}
 
+/* =====================================================================
+   14. MAIN RENDER PIPELINE
+   ===================================================================== */
+function renderAll(){
+  const rows = getFilteredRows();
+  const k = computeKpis(rows);
+  const depts = computeDepartments(rows);
+  const agents = computeAgents(rows);
+  const products = computeProducts(rows, ACTIVE_PRODUCT_FIELD);
 
-        if (
-            row.demoStatus ===
-            "missed"
-        ) {
+  renderKpis(k);
+  renderAttention(agents);
+  renderDepartments(depts);
+  renderAgentTable(agents);
+  renderCharts(rows, depts, agents, products);
+}
 
-            agents[row.agent]
-                .missed++;
+/* =====================================================================
+   15. STATE BANNER HELPERS
+   ===================================================================== */
+function showBanner(kind, msg){
+  const el = $("stateBanner");
+  el.className = kind;
+  el.style.display = "block";
+  el.textContent = msg;
+}
+function hideBanner(){ const el = $("stateBanner"); el.className = ""; el.style.display = "none"; }
 
-        }
+/* =====================================================================
+   16. LOAD + REFRESH
+   ===================================================================== */
+async function loadData(){
+  showBanner("loading", "Loading data from Google Sheet…");
+  try {
+    const parsed = await fetchSheet();
+    const headers = parsed.meta.fields || [];
+    FIELD_MAP = buildFieldMap(headers);
+    RAW_ROWS = normalizeRows(parsed.data, FIELD_MAP);
+    ACTIVE_PRODUCT_FIELD = decideProductField(RAW_ROWS);
 
-    });
-
-
-    const list =
-        Object.entries(
-            agents
-        )
-        .map(
-            ([agent,data]) => ({
-
-                agent,
-
-                ...data,
-
-                attendance:
-                    data.total
-                        ? data.completed /
-                          data.total
-                        : 0
-
-            })
-        )
-        .filter(
-            agent =>
-                agent.missed > 0
-        )
-        .sort(
-            (a,b) =>
-                b.missed -
-                a.missed
-        );
-
-
-    if (!list.length) {
-
-        $("alerts").innerHTML =
-            '<div class="empty">' +
-            "No agents with missed demos." +
-            "</div>";
-
-        return;
-
+    if (!FIELD_AVAILABILITY_NOTED){
+      const missingFields = Object.keys(FIELD_MAP).filter(k => !FIELD_MAP[k]);
+      if (missingFields.length){
+        console.warn("Fields not found in the sheet (features using them will show as unavailable):", missingFields);
+      }
+      FIELD_AVAILABILITY_NOTED = true;
     }
 
-
-    $("alerts").innerHTML =
-        list
-            .slice(0,12)
-            .map(
-                agent =>
-
-                    '<div class="alert">' +
-
-                        "<strong>" +
-                        "🔴 " +
-                        escapeHTML(
-                            agent.agent
-                        ) +
-                        "</strong>" +
-
-                        "<small>" +
-
-                        "Missed: " +
-                        agent.missed +
-
-                        " · Attendance: " +
-                        percentage(
-                            agent.attendance
-                        ) +
-
-                        " · Demos: " +
-                        agent.total +
-
-                        "</small>" +
-
-                    "</div>"
-
-            )
-            .join("");
-
+    populateFilterOptions();
+    renderAll();
+    hideBanner();
+    $("updatedAt").textContent = "updated " + new Date().toLocaleTimeString();
+  } catch (err) {
+    console.error(err);
+    showBanner("error", "⚠ " + err.message);
+    $("updatedAt").textContent = "load failed";
+  }
 }
 
-
-/* ============================================================
-   AGENT GROUPING
-   ============================================================ */
-
-function getAgentGroups(rows) {
-
-    const groups = {};
-
-
-    rows.forEach(row => {
-
-        const key =
-            row.agent +
-            "|||" +
-            row.department;
-
-
-        if (!groups[key]) {
-
-            groups[key] = {
-
-                agent:
-                    row.agent,
-
-                department:
-                    row.department,
-
-                total: 0,
-
-                completed: 0,
-
-                missed: 0,
-
-                pending: 0,
-
-                sales: 0,
-
-                amount: 0
-
-            };
-
-        }
-
-
-        const group =
-            groups[key];
-
-
-        group.total++;
-
-
-        if (
-            row.demoStatus ===
-            "completed"
-        ) {
-
-            group.completed++;
-
-        }
-
-
-        if (
-            row.demoStatus ===
-            "missed"
-        ) {
-
-            group.missed++;
-
-        }
-
-
-        if (
-            row.demoStatus ===
-            "pending"
-        ) {
-
-            group.pending++;
-
-        }
-
-
-        if (
-            row.saleStatus ===
-            "sale"
-        ) {
-
-            group.sales++;
-
-            group.amount +=
-                row.saleAmount;
-
-        }
-
-    });
-
-
-    return Object.values(
-        groups
-    )
-    .map(group => ({
-
-        ...group,
-
-        attendance:
-            group.total
-                ? group.completed /
-                  group.total
-                : 0,
-
-        conversion:
-            group.completed
-                ? group.sales /
-                  group.completed
-                : 0
-
-    }));
-
-}
-
-
-/* ============================================================
-   DEPARTMENT
-   ============================================================ */
-
-function renderDepartments() {
-
-    const departments = {};
-
-
-    filteredRows.forEach(row => {
-
-        if (
-            !departments[
-                row.department
-            ]
-        ) {
-
-            departments[
-                row.department
-            ] = [];
-
-        }
-
-
-        departments[
-            row.department
-        ].push(row);
-
-    });
-
-
-    const html =
-        Object.entries(
-            departments
-        )
-        .sort(
-            (a,b) =>
-                a[0].localeCompare(
-                    b[0]
-                )
-        )
-        .map(
-            ([department,rows]) => {
-
-                const metrics =
-                    calculateMetrics(
-                        rows
-                    );
-
-
-                return (
-
-                    '<div class="department">' +
-
-                        "<h3>" +
-                        escapeHTML(
-                            department
-                        ) +
-                        "</h3>" +
-
-                        '<div class="mini-grid">' +
-
-                            mini(
-                                "DEMOS",
-                                metrics.total
-                            ) +
-
-                            mini(
-                                "COMPLETED",
-                                metrics.completed
-                            ) +
-
-                            mini(
-                                "MISSED",
-                                metrics.missed
-                            ) +
-
-                            mini(
-                                "PENDING",
-                                metrics.pending
-                            ) +
-
-                            mini(
-                                "ATTENDANCE",
-                                percentage(
-                                    metrics.attendance
-                                )
-                            ) +
-
-                            mini(
-                                "SALES",
-                                metrics.sales
-                            ) +
-
-                            mini(
-                                "CONVERSION",
-                                percentage(
-                                    metrics.conversion
-                                )
-                            ) +
-
-                        "</div>" +
-
-                    "</div>"
-
-                );
-
-            }
-        )
-        .join("");
-
-
-    $("departmentGrid").innerHTML =
-        html ||
-        '<div class="empty">' +
-        "No department data." +
-        "</div>";
-
-}
-
-
-function mini(label,value) {
-
-    return (
-
-        '<div class="mini">' +
-
-            "<span>" +
-            label +
-            "</span>" +
-
-            "<b>" +
-            value +
-            "</b>" +
-
-        "</div>"
-
-    );
-
-}
-
-
-/* ============================================================
-   AGENT TABLE
-   ============================================================ */
-
-function renderAgents() {
-
-    let agents =
-        getAgentGroups(
-            filteredRows
-        );
-
-
-    agents.sort(
-        (a,b) => {
-
-            const aValue =
-                a[sortKey];
-
-            const bValue =
-                b[sortKey];
-
-
-            if (
-                typeof aValue ===
-                "string"
-            ) {
-
-                return (
-                    sortDirection *
-                    aValue.localeCompare(
-                        bValue
-                    )
-                );
-
-            }
-
-
-            return (
-                sortDirection *
-                (aValue - bValue)
-            );
-
-        }
-    );
-
-
-    $("agentEmpty").style.display =
-        agents.length
-            ? "none"
-            : "block";
-
-
-    $("agentBody").innerHTML =
-        agents
-            .map(
-                agent => {
-
-                    const rowClass =
-                        agent.missed > 0
-                            ? "row-red"
-                            : agent.pending > 0
-                                ? "row-yellow"
-                                : "";
-
-
-                    const statusColor =
-                        agent.missed > 0
-                            ? "red"
-                            : agent.pending > 0
-                                ? "yellow"
-                                : "green";
-
-
-                    const badgeClass =
-                        agent.attendance >= .8
-                            ? "green"
-                            : agent.attendance >= .6
-                                ? "yellow"
-                                : "red";
-
-
-                    return (
-
-                        '<tr class="' +
-                        rowClass +
-                        '">' +
-
-                            "<td>" +
-
-                                '<span class="status-dot" ' +
-                                'style="background:var(--' +
-                                statusColor +
-                                ')"></span>' +
-
-                                escapeHTML(
-                                    agent.agent
-                                ) +
-
-                            "</td>" +
-
-                            "<td>" +
-                            escapeHTML(
-                                agent.department
-                            ) +
-                            "</td>" +
-
-                            '<td class="num">' +
-                            agent.total +
-                            "</td>" +
-
-                            '<td class="num">' +
-                            agent.completed +
-                            "</td>" +
-
-                            '<td class="num red">' +
-                            agent.missed +
-                            "</td>" +
-
-                            '<td class="num yellow">' +
-                            agent.pending +
-                            "</td>" +
-
-                            '<td class="num">' +
-
-                                '<span class="badge ' +
-                                badgeClass +
-                                '">' +
-
-                                percentage(
-                                    agent.attendance
-                                ) +
-
-                                "</span>" +
-
-                            "</td>" +
-
-                            '<td class="num">' +
-                            agent.sales +
-                            "</td>" +
-
-                            '<td class="num">' +
-                            percentage(
-                                agent.conversion
-                            ) +
-                            "</td>" +
-
-                            '<td class="num">' +
-                            (
-                                agent.amount
-                                    ? money(
-                                        agent.amount
-                                    )
-                                    : "—"
-                            ) +
-                            "</td>" +
-
-                        "</tr>"
-
-                    );
-
-                }
-            )
-            .join("");
-
-}
-
-
-/* ============================================================
-   PRODUCT ANALYSIS
-   ============================================================ */
-
-function getProducts() {
-
-    const products = {};
-
-
-    filteredRows.forEach(row => {
-
-        const product =
-            row.product ||
-            "Product Name Not Provided";
-
-
-        if (!products[product]) {
-
-            products[product] = {
-
-                product,
-
-                total: 0,
-
-                completed: 0,
-
-                missed: 0,
-
-                sales: 0
-
-            };
-
-        }
-
-
-        const item =
-            products[product];
-
-
-        item.total++;
-
-
-        if (
-            row.demoStatus ===
-            "completed"
-        ) {
-
-            item.completed++;
-
-        }
-
-
-        if (
-            row.demoStatus ===
-            "missed"
-        ) {
-
-            item.missed++;
-
-        }
-
-
-        if (
-            row.saleStatus ===
-            "sale"
-        ) {
-
-            item.sales++;
-
-        }
-
-    });
-
-
-    return Object.values(
-        products
-    )
-    .map(product => ({
-
-        ...product,
-
-        conversion:
-            product.completed
-                ? product.sales /
-                  product.completed
-                : 0
-
-    }))
-    .sort(
-        (a,b) =>
-            b.total -
-            a.total
-    );
-
-}
-
-
-function renderProducts() {
-
-    const products =
-        getProducts();
-
-
-    const max =
-        Math.max(
-            1,
-            ...products.map(
-                p => p.total
-            )
-        );
-
-
-    const total =
-        filteredRows.length;
-
-
-    $("productList").innerHTML =
-        products.length
-
-            ? products
-                .slice(0,10)
-                .map(
-                    product =>
-
-                        '<div class="product-row">' +
-
-                            "<span>" +
-                            escapeHTML(
-                                product.product
-                            ) +
-                            "</span>" +
-
-                            '<div class="track">' +
-
-                                '<div class="fill" ' +
-                                'style="width:' +
-                                (
-                                    product.total /
-                                    max *
-                                    100
-                                ) +
-                                '%"></div>' +
-
-                            "</div>" +
-
-                            '<span class="product-number">' +
-
-                                product.total +
-
-                                " · " +
-
-                                (
-                                    total
-                                        ? percentage(
-                                            product.total /
-                                            total
-                                        )
-                                        : "0%"
-                                ) +
-
-                            "</span>" +
-
-                        "</div>"
-
-                )
-                .join("")
-
-            : '<div class="empty">' +
-              "No product data." +
-              "</div>";
-
-
-    $("productBody").innerHTML =
-        products
-            .map(
-                product =>
-
-                    "<tr>" +
-
-                        "<td>" +
-                        escapeHTML(
-                            product.product
-                        ) +
-                        "</td>" +
-
-                        '<td class="num">' +
-                        product.total +
-                        "</td>" +
-
-                        '<td class="num">' +
-                        product.completed +
-                        "</td>" +
-
-                        '<td class="num red">' +
-                        product.missed +
-                        "</td>" +
-
-                        '<td class="num">' +
-                        product.sales +
-                        "</td>" +
-
-                        '<td class="num">' +
-                        percentage(
-                            product.conversion
-                        ) +
-                        "</td>" +
-
-                    "</tr>"
-
-            )
-            .join("");
-
-
-    $("productNote").textContent =
-        products.length
-            ? "Top 5: " +
-              products
-                .slice(0,5)
-                .map(
-                    p => p.product
-                )
-                .join(", ") +
-
-              ". Least demonstrated: " +
-
-              products
-                .slice(-3)
-                .map(
-                    p => p.product
-                )
-                .join(", ")
-
-            : "No product records are available.";
-
-}
-
-
-/* ============================================================
-   CHART HELPER
-   ============================================================ */
-
-function renderChart(
-    id,
-    type,
-    data,
-    options = {}
-) {
-
-    if (charts[id]) {
-
-        charts[id].destroy();
-
-    }
-
-
-    charts[id] =
-        new Chart(
-            $(id),
-            {
-
-                type,
-
-                data,
-
-                options: {
-
-                    responsive: true,
-
-                    maintainAspectRatio:
-                        false,
-
-                    ...options
-
-                }
-
-            }
-        );
-
-}
-
-
-/* ============================================================
-   CHARTS
-   ============================================================ */
-
-function renderCharts() {
-
-    const metrics =
-        calculateMetrics(
-            filteredRows
-        );
-
-
-    /* Department chart */
-
-    const departments = {};
-
-
-    filteredRows.forEach(row => {
-
-        departments[
-            row.department
-        ] =
-            (
-                departments[
-                    row.department
-                ] || 0
-            ) + 1;
-
-    });
-
-
-    const departmentLabels =
-        Object.keys(
-            departments
-        );
-
-
-    renderChart(
-
-        "departmentChart",
-
-        "bar",
-
-        {
-
-            labels:
-                departmentLabels,
-
-            datasets: [
-
-                {
-
-                    label: "Demos",
-
-                    data:
-                        departmentLabels
-                            .map(
-                                d =>
-                                    departments[d]
-                            ),
-
-                    backgroundColor:
-                        "#3E7BFA",
-
-                    borderRadius: 5
-
-                }
-
-            ]
-
-        },
-
-        {
-
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-
-            scales: {
-
-                x: {
-                    ticks: {
-                        color:
-                            "#8A8F9C"
-                    },
-
-                    grid: {
-                        display: false
-                    }
-                },
-
-                y: {
-                    beginAtZero: true,
-
-                    ticks: {
-                        color:
-                            "#8A8F9C",
-                        precision: 0
-                    },
-
-                    grid: {
-                        color:
-                            "#292D37"
-                    }
-                }
-
-            }
-
-        }
-
-    );
-
-
-    /* Attendance */
-
-    const agents =
-        getAgentGroups(
-            filteredRows
-        );
-
-
-    renderChart(
-
-        "attendanceChart",
-
-        "bar",
-
-        {
-
-            labels:
-                agents.map(
-                    agent =>
-                        agent.agent
-                ),
-
-            datasets: [
-
-                {
-
-                    label:
-                        "Attendance %",
-
-                    data:
-                        agents.map(
-                            agent =>
-                                Number(
-                                    (
-                                        agent.attendance *
-                                        100
-                                    ).toFixed(1)
-                                )
-                        ),
-
-                    backgroundColor:
-                        agents.map(
-                            agent =>
-                                agent.attendance >= .8
-                                    ? "#39D98A"
-                                    : agent.attendance >= .6
-                                        ? "#E8B339"
-                                        : "#E85D4F"
-                        ),
-
-                    borderRadius: 5
-
-                }
-
-            ]
-
-        },
-
-        {
-
-            indexAxis: "y",
-
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-
-            scales: {
-
-                x: {
-                    beginAtZero: true,
-                    max: 100,
-
-                    ticks: {
-                        color:
-                            "#8A8F9C"
-                    },
-
-                    grid: {
-                        color:
-                            "#292D37"
-                    }
-                },
-
-                y: {
-                    ticks: {
-                        color:
-                            "#8A8F9C"
-                    },
-
-                    grid: {
-                        display: false
-                    }
-                }
-
-            }
-
-        }
-
-    );
-
-
-    /* Sales */
-
-    renderChart(
-
-        "salesChart",
-
-        "bar",
-
-        {
-
-            labels: [
-                "Completed Demos",
-                "Successful Sales"
-            ],
-
-            datasets: [
-
-                {
-
-                    data: [
-                        metrics.completed,
-                        metrics.sales
-                    ],
-
-                    backgroundColor: [
-                        "#3E7BFA",
-                        "#39D98A"
-                    ],
-
-                    borderRadius: 5
-
-                }
-
-            ]
-
-        },
-
-        {
-
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-
-            scales: {
-
-                x: {
-                    ticks: {
-                        color:
-                            "#8A8F9C"
-                    },
-
-                    grid: {
-                        display: false
-                    }
-                },
-
-                y: {
-                    beginAtZero: true,
-
-                    ticks: {
-                        color:
-                            "#8A8F9C",
-                        precision: 0
-                    },
-
-                    grid: {
-                        color:
-                            "#292D37"
-                    }
-                }
-
-            }
-
-        }
-
-    );
-
-
-    /* Trend */
-
-    const days = {};
-
-
-    filteredRows.forEach(row => {
-
-        if (!row.dateKey) {
-            return;
-        }
-
-
-        days[row.dateKey] =
-            (
-                days[row.dateKey] ||
-                0
-            ) + 1;
-
-    });
-
-
-    const dates =
-        Object.keys(days)
-            .sort();
-
-
-    renderChart(
-
-        "trendChart",
-
-        "line",
-
-        {
-
-            labels:
-                dates.map(
-                    date =>
-                        date.substring(
-                            5
-                        )
-                ),
-
-            datasets: [
-
-                {
-
-                    label:
-                        "Demos",
-
-                    data:
-                        dates.map(
-                            date =>
-                                days[date]
-                        ),
-
-                    borderColor:
-                        "#3E7BFA",
-
-                    backgroundColor:
-                        "rgba(62,123,250,.12)",
-
-                    fill: true,
-
-                    tension: .25,
-
-                    pointRadius: 3
-
-                }
-
-            ]
-
-        },
-
-        {
-
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-
-            scales: {
-
-                x: {
-                    ticks: {
-                        color:
-                            "#8A8F9C"
-                    },
-
-                    grid: {
-                        display: false
-                    }
-                },
-
-                y: {
-                    beginAtZero: true,
-
-                    ticks: {
-                        color:
-                            "#8A8F9C",
-                        precision: 0
-                    },
-
-                    grid: {
-                        color:
-                            "#292D37"
-                    }
-                }
-
-            }
-
-        }
-
-    );
-
-}
-
-
-/* ============================================================
-   LOADING / ERROR
-   ============================================================ */
-
-function setLoading(isLoading) {
-
-    $("loading")
-        .classList
-        .toggle(
-            "show",
-            isLoading
-        );
-
-
-    $("refreshBtn")
-        .disabled =
-        isLoading;
-
-}
-
-
-function showStatus(message) {
-
-    $("status").textContent =
-        message;
-
-    $("status")
-        .classList
-        .add("show");
-
-}
-
-
-function clearStatus() {
-
-    $("status")
-        .classList
-        .remove("show");
-
-}
-
-
-/* ============================================================
-   EVENTS
-   ============================================================ */
-
-document
-    .querySelectorAll(
-        "th[data-sort]"
-    )
-    .forEach(
-        header => {
-
-            header.addEventListener(
-                "click",
-                () => {
-
-                    const key =
-                        header.dataset.sort;
-
-
-                    if (
-                        sortKey === key
-                    ) {
-
-                        sortDirection *= -1;
-
-                    } else {
-
-                        sortKey = key;
-
-                        sortDirection = -1;
-
-                    }
-
-
-                    renderAgents();
-
-                }
-            );
-
-        }
-    );
-
-
-[
-    "dateFilter",
-    "departmentFilter",
-    "agentFilter",
-    "productFilter"
-]
-.forEach(
-    id => {
-
-        $(id)
-            .addEventListener(
-                "change",
-                () => {
-
-                    $("customRange")
-                        .style
-                        .display =
-                        $("dateFilter")
-                            .value ===
-                        "custom"
-                            ? "flex"
-                            : "none";
-
-
-                    applyFilters();
-
-                }
-            );
-
-    }
-);
-
-
-[
-    "searchInput",
-    "fromDate",
-    "toDate"
-]
-.forEach(
-    id => {
-
-        $(id)
-            .addEventListener(
-                "input",
-                applyFilters
-            );
-
-    }
-);
-
-
-$("refreshBtn")
-    .addEventListener(
-        "click",
-        loadData
-    );
-
-
-$("resetBtn")
-    .addEventListener(
-        "click",
-        () => {
-
-            $("dateFilter").value =
-                "all";
-
-            $("departmentFilter").value =
-                "all";
-
-            $("agentFilter").value =
-                "all";
-
-            $("productFilter").value =
-                "all";
-
-            $("searchInput").value =
-                "";
-
-            $("fromDate").value =
-                "";
-
-            $("toDate").value =
-                "";
-
-            $("customRange")
-                .style
-                .display =
-                "none";
-
-            applyFilters();
-
-        }
-    );
-
-
-/* ============================================================
-   START
-   ============================================================ */
+/* =====================================================================
+   17. EVENTS
+   ===================================================================== */
+["dateFilter","deptFilter","agentFilter","productFilter"].forEach(id => $(id).addEventListener("change", () => {
+  $("customRangeWrap").classList.toggle("show", $("dateFilter").value === "custom");
+  renderAll();
+}));
+$("dateFrom").addEventListener("change", renderAll);
+$("dateTo").addEventListener("change", renderAll);
+$("searchBox").addEventListener("input", renderAll);
+$("refreshBtn").addEventListener("click", loadData);
+document.querySelectorAll("#agentTable th[data-k]").forEach(th => {
+  th.addEventListener("click", () => {
+    const k = th.dataset.k;
+    sortState.dir = (sortState.key === k && sortState.dir === "desc") ? "asc" : "desc";
+    sortState.key = k;
+    renderAll();
+  });
+});
 
 loadData();
-
-
-setInterval(
-    loadData,
-    CONFIG.REFRESH_INTERVAL
-);
-
+setInterval(loadData, CONFIG.REFRESH_INTERVAL);
 </script>
-
 </body>
 </html>
-```
